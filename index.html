@@ -7,12 +7,36 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
+  /* Noto Color Emoji activé uniquement sur les codepoints emoji — ne touche pas
+     les métriques du texte latin/français pour éviter l'espacement excessif. */
+  @font-face {
+    font-family: "NotoEmoji";
+    src: local("Noto Color Emoji");
+    unicode-range:
+      U+200D, U+20E3, U+FE0F,           /* ZWJ, combining enclosing keycap, variation selector */
+      U+1F1E0-1F1FF,                     /* drapeaux (regional indicators) */
+      U+1F300-1F5FF,                     /* symboles & pictogrammes divers */
+      U+1F600-1F64F,                     /* émoticônes visages */
+      U+1F650-1F67F,                     /* ornements */
+      U+1F680-1F6FF,                     /* transport & symboles de carte */
+      U+1F700-1F77F,                     /* alchimie */
+      U+1F780-1F7FF,                     /* formes géométriques étendues */
+      U+1F800-1F8FF,                     /* flèches supplémentaires */
+      U+1F900-1F9FF,                     /* symboles supplémentaires et pictogrammes */
+      U+1FA00-1FA6F,                     /* symboles de jeux d'échecs */
+      U+1FA70-1FAFF,                     /* symboles et pictogrammes étendus-A */
+      U+2300-23FF,                       /* symboles techniques */
+      U+2600-27BF,                       /* symboles divers */
+      U+2B00-2BFF;                       /* flèches supplémentaires-B */
+  }
+
   body {
     width: 1080px;
     height: 1920px;
     background: #fff;
+    /* Texte latin d'abord → métriques normales. NotoEmoji en fallback → emoji couleur. */
     font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Arial,
-                 "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+                 "NotoEmoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -180,11 +204,13 @@
   /* Messages composés uniquement d'emojis → affichage agrandi, fond transparent */
   .bubble.emoji-only {
     background: transparent !important;
-    font-size: 80px;
-    padding: 8px 16px;
+    padding: 6px 12px;
     border-radius: 0;
-    line-height: 1.1;
+    line-height: 1.15;
+    font-size: 88px;   /* défaut : 1-3 emoji */
   }
+  .bubble.emoji-only.emoji-few   { font-size: 72px; }  /* 4-6 emoji */
+  .bubble.emoji-only.emoji-many  { font-size: 52px; }  /* 7+ emoji */
 
   /* ── Typing indicator ── */
   .typing-indicator {
@@ -428,15 +454,20 @@
     ? `<div class="bubble-avatar"><img src="${config.avatarImage}" alt=""></div>`
     : `<div class="bubble-avatar">${config.avatarEmoji || '👤'}</div>`;
 
-  // Detect emoji-only messages (no letters/digits/punctuation — only emoji + whitespace)
+  // Détection emoji-only via Unicode property escapes (V8/Chromium 64+)
+  // Supprime tout ce qui est emoji, ZWJ, sélecteurs de variation, modificateurs
+  const EMOJI_REGEX = /[\p{Emoji_Presentation}\p{Extended_Pictographic}](\u{FE0F})?(\u{20E3})?(\u{200D}[\p{Emoji_Presentation}\p{Extended_Pictographic}](\u{FE0F})?(\u{20E3})?)*|\u{FE0F}|\u{200D}|\u{20E3}|[\u{1F1E0}-\u{1F1FF}]/gu;
+
   function isEmojiOnly(text) {
-    const stripped = text.replace(/\s/g, '');
-    // Remove all emoji characters; if nothing is left, it's emoji-only
-    const withoutEmoji = stripped.replace(
-      /[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27BF}]|[\u{2300}-\u{23FF}]|[\u{2B00}-\u{2BFF}]|[\u{FE00}-\u{FE0F}]|[\u{1F900}-\u{1F9FF}]|‍/gu,
-      ''
-    );
-    return stripped.length > 0 && withoutEmoji.length === 0;
+    const stripped = text.trim();
+    if (!stripped) return false;
+    const withoutEmoji = stripped.replace(EMOJI_REGEX, '').replace(/\s/g, '');
+    return withoutEmoji.length === 0;
+  }
+
+  // Compte le nombre d'emoji pour adapter la taille d'affichage
+  function countEmoji(text) {
+    return (text.match(EMOJI_REGEX) || []).length;
   }
 
   // Emit audio event: intercepted in real-time by render.py via console listener
@@ -569,8 +600,14 @@
     }
 
     // Create bubble — fire sound exactly when bubble becomes visible
-    const emojiOnly = isEmojiOnly(msg.text);
-    const bubbleClass = `bubble ${msg.sender}${emojiOnly ? ' emoji-only' : ''}`;
+    const emojiOnly  = isEmojiOnly(msg.text);
+    let emojiSizeClass = '';
+    if (emojiOnly) {
+      const n = countEmoji(msg.text);
+      if (n >= 7)      emojiSizeClass = ' emoji-many';
+      else if (n >= 4) emojiSizeClass = ' emoji-few';
+    }
+    const bubbleClass = `bubble ${msg.sender}${emojiOnly ? ' emoji-only' + emojiSizeClass : ''}`;
     const name  = msg.sender === 'received' ? receivedName : sentName;
     const row = document.createElement('div');
     row.className = `bubble-row ${msg.sender}`;
