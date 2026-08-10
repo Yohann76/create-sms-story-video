@@ -404,7 +404,7 @@
 
   // ── Audio ────────────────────────────────────────────────────────────────
   function recordAudio(key, extra = {}) {
-    console.log(JSON.stringify({ __audio: key, ...extra }));
+    console.log(JSON.stringify({ __audio: key, t: Math.round(performance.now()), ...extra }));
   }
   function playSound(src, vol = 0.8) {
     if (!src) return null;

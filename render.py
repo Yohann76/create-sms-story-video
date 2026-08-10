@@ -13,7 +13,6 @@ import subprocess
 import sys
 import tempfile
 import threading
-import time
 from pathlib import Path
 
 try:
@@ -80,7 +79,7 @@ def compute_total_duration(scenario: dict) -> float:
 
 def build_audio_track(events: list, duration_s: float, project_dir: Path, sounds: dict) -> Path | None:
     """Mix all sound events into a single AAC audio file using FFmpeg.
-    events = list of (timestamp_ms, sound_key, trim_ms|None) from JS console events.
+    events = list of (timestamp_ms, sound_key, trim_ms|None).
     trim_ms is only set for 'typing' — the sound is cut at that exact duration.
     """
     resolved = []
@@ -107,7 +106,6 @@ def build_audio_track(events: list, duration_s: float, project_dir: Path, sounds
         input_args += ["-i", str(sf)]
         label = f"s{idx}"
         if trim_ms is not None:
-            # Couper le son typing exactement à la fin de la période d'écriture
             cut_at = ts_ms / 1000 + trim_ms / 1000
             filter_parts.append(
                 f"[{idx}]adelay={ts_ms}|{ts_ms},"
@@ -153,15 +151,12 @@ def start_http_server(directory: Path, port: int) -> http.server.HTTPServer:
     return server
 
 
-async def capture_frames(scenario_path: Path, duration: float, port: int) -> tuple[Path, int, list]:
+async def capture_via_playwright_video(scenario_path: Path, duration: float, port: int) -> tuple[Path, list]:
     """
-    Launch Playwright, capture PNG frames.
-    Returns (frames_dir, frame_count, audio_events).
-
-    Audio events are collected via console messages emitted by JS at the exact
-    moment each sound fires. We record the wall-clock time of each event and
-    each frame, then map events → frame indices → video timestamps.
-    This eliminates any drift between JS time and actual capture speed.
+    Record the animation in real-time using Playwright's built-in video capture.
+    Audio events are collected from JS console with performance.now() timestamps,
+    which map directly to the video timeline since both run in real-time.
+    Returns (webm_path, audio_events).
     """
     project_dir       = scenario_path.resolve().parent
     scenario_filename = scenario_path.name
@@ -169,9 +164,7 @@ async def capture_frames(scenario_path: Path, duration: float, port: int) -> tup
     server = start_http_server(project_dir, port)
     print(f"[INFO] HTTP server on port {port}")
 
-    # Collected in real-time by the console listener
-    # Tuples: (wall_clock, key, trim_ms|None)
-    audio_events_wall: list[tuple] = []
+    audio_events_js: list[tuple] = []
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
@@ -184,20 +177,25 @@ async def capture_frames(scenario_path: Path, duration: float, port: int) -> tup
                 "--autoplay-policy=no-user-gesture-required",
             ],
         )
+
+        video_dir = Path(tempfile.mkdtemp())
         context = await browser.new_context(
             viewport={"width": WIDTH, "height": HEIGHT},
             device_scale_factor=1,
+            record_video_dir=str(video_dir),
+            record_video_size={"width": WIDTH, "height": HEIGHT},
         )
         page = await context.new_page()
 
-        # Intercept console.log() from JS to capture audio events in real-time
         def on_console(msg):
-            t = time.time()
             try:
                 data = json.loads(msg.text)
                 if isinstance(data, dict) and "__audio" in data:
-                    trim_ms = data.get("ms")  # only set for 'typing'
-                    audio_events_wall.append((t, data["__audio"], trim_ms))
+                    audio_events_js.append((
+                        int(data.get("t", 0)),
+                        data["__audio"],
+                        data.get("ms"),
+                    ))
             except Exception:
                 pass
 
@@ -207,77 +205,52 @@ async def capture_frames(scenario_path: Path, duration: float, port: int) -> tup
         print(f"[INFO] Loading {url}")
         await page.goto(url, wait_until="domcontentloaded")
 
-        print("[INFO] Capturing frames...")
-        frames_dir     = Path(tempfile.mkdtemp())
-        frame_times: list[float] = []   # wall-clock time of each captured frame
-        frame_index    = 0
-        frame_interval = 1.0 / FPS
-        deadline       = time.time() + duration + 5
+        print(f"[INFO] Recording animation in real-time (~{duration:.0f}s)...")
+        timeout_ms = int((duration + 60) * 1000)
+        await page.wait_for_function(
+            "() => window.__RENDER_DONE__ === true",
+            timeout=timeout_ms,
+        )
+        await asyncio.sleep(2.5)  # 2.5s tail
 
-        while time.time() < deadline:
-            t0 = time.time()
-            frame_path = frames_dir / f"frame_{frame_index:06d}.png"
-            await page.screenshot(path=str(frame_path), full_page=False)
-            frame_times.append(time.time())   # record AFTER screenshot is complete
-            frame_index += 1
-
-            done = await page.evaluate("() => window.__RENDER_DONE__ === true")
-            if done:
-                for _ in range(FPS * 2):   # 2s tail
-                    await asyncio.sleep(frame_interval)
-                    frame_path = frames_dir / f"frame_{frame_index:06d}.png"
-                    await page.screenshot(path=str(frame_path), full_page=False)
-                    frame_times.append(time.time())
-                    frame_index += 1
-                break
-
-            await asyncio.sleep(max(0, frame_interval - (time.time() - t0)))
-
+        webm_path = Path(await page.video.path())
+        await page.close()
+        await context.close()
         await browser.close()
 
     server.shutdown()
 
-    # Map each audio event to the closest captured frame, then convert to video ms
-    audio_events: list[tuple] = []
-    for event_wall, key, trim_ms in audio_events_wall:
-        idx = min(range(len(frame_times)), key=lambda i: abs(frame_times[i] - event_wall))
-        video_ms = round(idx / FPS * 1000)
-        audio_events.append((video_ms, key, trim_ms))
-
-    # For typing events: replace trim_ms by the delta to the next send/receive event.
-    # This guarantees the typing sound stops exactly when the message appears,
-    # regardless of any drift between setTimeout and actual capture timing.
-    audio_events_synced: list[tuple] = []
-    for i, (video_ms, key, trim_ms) in enumerate(audio_events):
-        if key == 'typing':
-            next_msg_ms = next(
-                (audio_events[j][0] for j in range(i + 1, len(audio_events))
-                 if audio_events[j][1] in ('send', 'receive')),
-                None
+    # Sync typing trim: stop at the moment the next send/receive fires
+    events_synced: list[tuple] = []
+    for i, (t_ms, key, trim_ms) in enumerate(audio_events_js):
+        if key == "typing":
+            next_ms = next(
+                (audio_events_js[j][0] for j in range(i + 1, len(audio_events_js))
+                 if audio_events_js[j][1] in ("send", "receive")),
+                None,
             )
-            trim_ms = (next_msg_ms - video_ms) if next_msg_ms is not None else trim_ms
-        audio_events_synced.append((video_ms, key, trim_ms))
+            trim_ms = (next_ms - t_ms) if next_ms is not None else trim_ms
+        events_synced.append((t_ms, key, trim_ms))
 
-    print(f"[INFO] Captured {frame_index} frames | {len(audio_events_synced)} audio events (wall-clock synced)")
-    return frames_dir, frame_index, audio_events_synced
+    print(f"[INFO] Recorded | {len(events_synced)} audio events (JS-timestamp synced)")
+    return webm_path, events_synced
 
 
-def encode_video(frames_dir: Path, frame_count: int, audio_path: Path | None, output_path: Path):
-    """Assemble frames + optional audio into final MP4."""
-    duration_s = frame_count / FPS
-    tmp_video  = Path(tempfile.mktemp(suffix=".mp4"))
+def encode_video(webm_path: Path, audio_path: Path | None, output_path: Path):
+    """Convert Playwright WebM → H.264 MP4, then mux audio if available."""
+    tmp_mp4 = Path(tempfile.mktemp(suffix=".mp4"))
 
-    # Step 1 — frames → silent MP4
+    # Step 1 — WebM → silent MP4 at 30fps
     cmd = [
         "ffmpeg", "-y",
-        "-framerate", str(FPS),
-        "-i", str(frames_dir / "frame_%06d.png"),
+        "-i", str(webm_path),
+        "-r", str(FPS),
         "-c:v", "libx264",
         "-pix_fmt", "yuv420p",
         "-crf", "18",
         "-preset", "medium",
         "-movflags", "+faststart",
-        str(tmp_video),
+        str(tmp_mp4),
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
@@ -285,12 +258,14 @@ def encode_video(frames_dir: Path, frame_count: int, audio_path: Path | None, ou
         print(result.stderr)
         sys.exit(1)
 
+    webm_path.unlink(missing_ok=True)
+
     # Step 2 — mux audio if available
     if audio_path and audio_path.exists():
         print("[INFO] Muxing audio into video...")
         cmd = [
             "ffmpeg", "-y",
-            "-i", str(tmp_video),
+            "-i", str(tmp_mp4),
             "-i", str(audio_path),
             "-c:v", "copy",
             "-c:a", "aac",
@@ -302,17 +277,24 @@ def encode_video(frames_dir: Path, frame_count: int, audio_path: Path | None, ou
         if result.returncode != 0:
             print("[WARN] Audio mux failed, saving video without audio:")
             print(result.stderr[-400:])
-            tmp_video.rename(output_path)
+            tmp_mp4.rename(output_path)
         else:
-            tmp_video.unlink(missing_ok=True)
+            tmp_mp4.unlink(missing_ok=True)
             audio_path.unlink(missing_ok=True)
     else:
-        tmp_video.rename(output_path)
+        tmp_mp4.rename(output_path)
 
-    # Cleanup frames
-    for f in frames_dir.iterdir():
-        f.unlink()
-    frames_dir.rmdir()
+
+def probe_duration(path: Path) -> float:
+    result = subprocess.run(
+        ["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+         "-of", "default=noprint_wrappers=1:nokey=1", str(path)],
+        capture_output=True, text=True,
+    )
+    try:
+        return float(result.stdout.strip())
+    except ValueError:
+        return 0.0
 
 
 def main():
@@ -341,22 +323,26 @@ def main():
 
     print(f"[INFO] Estimated duration : {duration:.1f}s")
 
-    # Capture frames + collect JS audio events (perfectly timed)
-    frames_dir, frame_count, audio_events = asyncio.run(
-        capture_frames(scenario_path, duration, args.port)
+    # Capture animation in real-time + collect JS audio events
+    webm_path, audio_events = asyncio.run(
+        capture_via_playwright_video(scenario_path, duration, args.port)
     )
 
-    actual_duration = frame_count / FPS
+    actual_duration = probe_duration(webm_path)
+    if actual_duration <= 0:
+        actual_duration = duration + 2.5
+    print(f"[INFO] Recorded duration  : {actual_duration:.1f}s")
 
     # Build audio track from JS-reported timestamps
     audio_path = build_audio_track(audio_events, actual_duration, project_dir, sounds)
 
     # Encode final MP4
     print("[INFO] Encoding final MP4...")
-    encode_video(frames_dir, frame_count, audio_path, output_path)
+    encode_video(webm_path, audio_path, output_path)
 
+    final_duration = probe_duration(output_path)
     print(f"[DONE] {output_path.resolve()}")
-    print(f"       {frame_count} frames | {actual_duration:.1f}s | {FPS}fps | audio: {'yes' if audio_path else 'no'}")
+    print(f"       {final_duration:.1f}s | {FPS}fps | audio: {'yes' if audio_path else 'no'}")
 
 
 if __name__ == "__main__":
