@@ -44,6 +44,23 @@ def resolve_sounds(config: dict) -> dict:
 
 def compute_total_duration(scenario: dict) -> float:
     """Mirror of the JS timeline, returns seconds."""
+    if "script" in scenario:
+        total_ms = 2000
+        for action in scenario.get("script", []):
+            total_ms += action.get("delay", 0)
+            kind = action.get("action")
+            if kind == "message":
+                if action.get("sender") == "received":
+                    total_ms += action.get("typingDuration", 0)
+                elif action.get("sender") == "sent":
+                    total_ms += len(action.get("text", "")) * 60
+                total_ms += 400
+            elif kind == "switch":
+                total_ms += 700
+        total_ms += 3000
+        return total_ms / 1000
+
+    # Legacy format
     messages = scenario.get("messages", [])
     notifs   = scenario.get("notifications", [])
 

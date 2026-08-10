@@ -7,34 +7,22 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  /* Noto Color Emoji activé uniquement sur les codepoints emoji — ne touche pas
-     les métriques du texte latin/français pour éviter l'espacement excessif. */
+  /* Noto Color Emoji uniquement sur les codepoints emoji — ne touche pas les métriques du texte */
   @font-face {
     font-family: "NotoEmoji";
     src: local("Noto Color Emoji");
     unicode-range:
-      U+200D, U+20E3, U+FE0F,           /* ZWJ, combining enclosing keycap, variation selector */
-      U+1F1E0-1F1FF,                     /* drapeaux (regional indicators) */
-      U+1F300-1F5FF,                     /* symboles & pictogrammes divers */
-      U+1F600-1F64F,                     /* émoticônes visages */
-      U+1F650-1F67F,                     /* ornements */
-      U+1F680-1F6FF,                     /* transport & symboles de carte */
-      U+1F700-1F77F,                     /* alchimie */
-      U+1F780-1F7FF,                     /* formes géométriques étendues */
-      U+1F800-1F8FF,                     /* flèches supplémentaires */
-      U+1F900-1F9FF,                     /* symboles supplémentaires et pictogrammes */
-      U+1FA00-1FA6F,                     /* symboles de jeux d'échecs */
-      U+1FA70-1FAFF,                     /* symboles et pictogrammes étendus-A */
-      U+2300-23FF,                       /* symboles techniques */
-      U+2600-27BF,                       /* symboles divers */
-      U+2B00-2BFF;                       /* flèches supplémentaires-B */
+      U+200D, U+20E3, U+FE0F, U+1F1E0-1F1FF,
+      U+1F300-1F5FF, U+1F600-1F64F, U+1F650-1F67F,
+      U+1F680-1F6FF, U+1F700-1F77F, U+1F780-1F7FF,
+      U+1F800-1F8FF, U+1F900-1F9FF, U+1FA00-1FA6F,
+      U+1FA70-1FAFF, U+2300-23FF, U+2600-27BF, U+2B00-2BFF;
   }
 
   body {
     width: 1080px;
     height: 1920px;
     background: #fff;
-    /* Texte latin d'abord → métriques normales. NotoEmoji en fallback → emoji couleur. */
     font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Arial,
                  "NotoEmoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
     overflow: hidden;
@@ -55,10 +43,20 @@
     color: #000;
     font-size: 32px;
     font-weight: 600;
+    z-index: 10;
   }
   .status-bar .time { font-size: 36px; font-weight: 700; }
   .status-icons { display: flex; gap: 14px; align-items: center; }
   .status-icons svg { width: 36px; height: 36px; fill: #000; }
+
+  /* ── Conversation screen (animé lors du switch) ── */
+  #convScreen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
 
   /* ── Navigation bar ── */
   .nav-bar {
@@ -99,17 +97,8 @@
     overflow: hidden;
     flex-shrink: 0;
   }
-  .nav-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-  }
-  .nav-name {
-    color: #000;
-    font-size: 30px;
-    font-weight: 600;
-  }
+  .nav-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+  .nav-name { color: #000; font-size: 30px; font-weight: 600; }
   .nav-action { color: #007aff; font-size: 32px; }
 
   /* ── Messages area ── */
@@ -128,27 +117,17 @@
     gap: 12px;
   }
 
-  /* ── Avatar miniature (bulles reçues) ── */
+  /* ── Avatar miniature ── */
   .bubble-avatar {
-    width: 56px;
-    height: 56px;
+    width: 56px; height: 56px;
     border-radius: 50%;
     background: #d1d1d6;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     font-size: 28px;
-    overflow: hidden;
-    flex-shrink: 0;
-    align-self: flex-end;
-    margin-bottom: 4px;
+    overflow: hidden; flex-shrink: 0;
+    align-self: flex-end; margin-bottom: 4px;
   }
-  .bubble-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-  }
+  .bubble-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
   .bubble-row.sent .bubble-avatar { display: none; }
 
   /* ── Wrapper nom + bulle ── */
@@ -165,7 +144,6 @@
     padding: 0 12px;
   }
   .bubble-row.sent .bubble-name { text-align: right; }
-  /* Quand emoji-only le max-width ne s'applique pas */
   .bubble-content:has(.emoji-only) { max-width: 80%; }
 
   /* ── Bubbles ── */
@@ -177,10 +155,7 @@
     transform: translateY(18px) scale(0.97);
     transition: opacity 0.12s ease-out, transform 0.14s ease-out;
   }
-  .bubble-row.visible {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  .bubble-row.visible { opacity: 1; transform: translateY(0) scale(1); }
   .bubble-row.sent { flex-direction: row-reverse; }
 
   .bubble {
@@ -189,64 +164,43 @@
     font-size: 38px;
     line-height: 1.4;
     word-break: break-word;
-    position: relative;
   }
-  .bubble.received {
-    background: #e5e5ea;
-    color: #000;
-    border-bottom-left-radius: 10px;
-  }
-  .bubble.sent {
-    background: #34c759;
-    color: #fff;
-    border-bottom-right-radius: 10px;
-  }
-  /* Messages composés uniquement d'emojis → affichage agrandi, fond transparent */
+  .bubble.received { background: #e5e5ea; color: #000; border-bottom-left-radius: 10px; }
+  .bubble.sent     { background: #34c759; color: #fff; border-bottom-right-radius: 10px; }
   .bubble.emoji-only {
     background: transparent !important;
     padding: 6px 12px;
     border-radius: 0;
     line-height: 1.15;
-    font-size: 88px;   /* défaut : 1-3 emoji */
+    font-size: 88px;
   }
-  .bubble.emoji-only.emoji-few   { font-size: 72px; }  /* 4-6 emoji */
-  .bubble.emoji-only.emoji-many  { font-size: 52px; }  /* 7+ emoji */
+  .bubble.emoji-only.emoji-few  { font-size: 72px; }
+  .bubble.emoji-only.emoji-many { font-size: 52px; }
 
   /* ── Typing indicator ── */
   .typing-indicator {
-    display: flex;
-    align-items: center;
-    gap: 16px;
+    display: flex; align-items: center; gap: 16px;
     opacity: 0;
     transform: translateY(18px) scale(0.97);
     transition: opacity 0.12s ease-out, transform 0.14s ease-out;
   }
-  .typing-indicator.visible {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  .typing-indicator.visible { opacity: 1; transform: translateY(0) scale(1); }
   .typing-bubble {
     background: #e5e5ea;
-    border-radius: 36px;
-    border-bottom-left-radius: 10px;
+    border-radius: 36px; border-bottom-left-radius: 10px;
     padding: 22px 36px;
-    display: flex;
-    gap: 14px;
-    align-items: center;
+    display: flex; gap: 14px; align-items: center;
   }
   .typing-dot {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #8e8e93;
+    width: 18px; height: 18px;
+    border-radius: 50%; background: #8e8e93;
     animation: typingBounce 1.2s ease-in-out infinite;
   }
   .typing-dot:nth-child(2) { animation-delay: 0.2s; }
   .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-
   @keyframes typingBounce {
     0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-    30% { transform: translateY(-10px); opacity: 1; }
+    30%           { transform: translateY(-10px); opacity: 1; }
   }
 
   /* ── Input bar ── */
@@ -255,397 +209,414 @@
     height: 130px;
     background: #f2f2f7;
     border-top: 1px solid #c6c6c8;
-    display: flex;
-    align-items: center;
-    padding: 0 30px;
-    gap: 20px;
+    display: flex; align-items: center;
+    padding: 0 30px; gap: 20px;
   }
   .input-field {
-    flex: 1;
-    height: 80px;
+    flex: 1; height: 80px;
     background: #fff;
-    border-radius: 40px;
-    border: 1px solid #c6c6c8;
-    display: flex;
-    align-items: center;
+    border-radius: 40px; border: 1px solid #c6c6c8;
+    display: flex; align-items: center;
     padding: 0 36px;
     font-size: 34px;
-    overflow: hidden;
-    gap: 0;
+    overflow: hidden; gap: 0;
   }
   #inputPlaceholder { color: #aeaeb2; flex-shrink: 0; }
   #inputTyped       { color: #000; white-space: nowrap; overflow: hidden; }
   .input-cursor {
-    display: inline-block;
-    width: 3px;
-    height: 44px;
-    background: #007aff;
-    border-radius: 2px;
-    flex-shrink: 0;
-    opacity: 0;
-    margin-left: 2px;
-    align-self: center;
+    display: inline-block; width: 3px; height: 44px;
+    background: #007aff; border-radius: 2px;
+    flex-shrink: 0; opacity: 0; margin-left: 2px; align-self: center;
   }
-  .input-cursor.blink {
-    animation: cursorBlink 0.55s step-end infinite;
-  }
-  @keyframes cursorBlink {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0; }
-  }
+  .input-cursor.blink { animation: cursorBlink 0.55s step-end infinite; }
+  @keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
   .input-icon {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
+    width: 72px; height: 72px; border-radius: 50%;
     background: #e5e5ea;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     font-size: 34px;
   }
 
   /* ── Notification banner ── */
   .notification-banner {
     position: absolute;
-    top: -220px;
-    left: 40px;
-    right: 40px;
-    background: rgba(255, 255, 255, 0.88);
+    top: -220px; left: 40px; right: 40px;
+    background: rgba(255,255,255,0.92);
     backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
     border-radius: 28px;
     padding: 24px 30px;
-    display: flex;
-    align-items: center;
-    gap: 24px;
+    display: flex; align-items: center; gap: 24px;
     transition: top 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-    z-index: 100;
+    z-index: 200;
     border: 1px solid rgba(0,0,0,0.08);
     box-shadow: 0 8px 32px rgba(0,0,0,0.12);
   }
   .notification-banner.show { top: 90px; }
   .notif-icon {
-    width: 70px;
-    height: 70px;
-    border-radius: 16px;
+    width: 70px; height: 70px; border-radius: 16px;
     background: #34c759;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 36px;
-    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; flex-shrink: 0; overflow: hidden;
   }
+  .notif-icon img { width: 100%; height: 100%; object-fit: cover; }
   .notif-content { flex: 1; }
-  .notif-app { color: #8e8e93; font-size: 26px; margin-bottom: 4px; }
+  .notif-app   { color: #8e8e93; font-size: 26px; margin-bottom: 4px; }
   .notif-title { color: #000; font-size: 32px; font-weight: 600; }
-  .notif-body { color: #3c3c43; font-size: 30px; margin-top: 4px; }
-  .notif-time { color: #8e8e93; font-size: 26px; }
+  .notif-body  { color: #3c3c43; font-size: 30px; margin-top: 4px; }
+  .notif-time  { color: #8e8e93; font-size: 26px; }
+
+  /* ── Transition switch conversation ── */
+  #convScreen.switch-exit {
+    transform: translateX(60%);
+    opacity: 0;
+    transition: transform 0.30s cubic-bezier(0.4,0,1,1),
+                opacity   0.25s ease;
+  }
+  #convScreen.switch-enter-prep {
+    transform: translateX(30%);
+    opacity: 0;
+    transition: none;
+  }
+  #convScreen.switch-enter {
+    transform: translateX(0);
+    opacity: 1;
+    transition: transform 0.34s cubic-bezier(0,0,0.2,1),
+                opacity   0.26s ease;
+  }
 
   /* ── Home indicator ── */
   .home-indicator {
-    flex-shrink: 0;
-    height: 50px;
-    background: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-shrink: 0; height: 50px; background: #fff;
+    display: flex; align-items: center; justify-content: center;
   }
-  .home-bar {
-    width: 200px;
-    height: 10px;
-    background: #000;
-    border-radius: 5px;
-    opacity: 0.2;
-  }
+  .home-bar { width: 200px; height: 10px; background: #000; border-radius: 5px; opacity: 0.2; }
 </style>
 </head>
 <body>
 
-<!-- Notification banner -->
+<!-- Notification banner (hors convScreen pour ne pas être affectée par les transitions) -->
 <div class="notification-banner" id="notifBanner">
-  <div class="notif-icon">💬</div>
+  <div class="notif-icon" id="notifIcon">💬</div>
   <div class="notif-content">
     <div class="notif-app">Messages</div>
     <div class="notif-title" id="notifTitle"></div>
-    <div class="notif-body" id="notifBody"></div>
+    <div class="notif-body"  id="notifBody"></div>
   </div>
-  <div class="notif-time">now</div>
+  <div class="notif-time">maintenant</div>
 </div>
 
-<!-- Status bar -->
+<!-- Status bar (fixe) -->
 <div class="status-bar">
   <span class="time">9:41</span>
   <div class="status-icons">
-    <!-- Signal -->
     <svg viewBox="0 0 24 24"><rect x="0" y="14" width="4" height="10"/><rect x="5" y="9" width="4" height="15"/><rect x="10" y="4" width="4" height="20"/><rect x="15" y="0" width="4" height="24" opacity="0.3"/></svg>
-    <!-- WiFi -->
     <svg viewBox="0 0 24 24"><path d="M12 18.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM12 14c1.8 0 3.4.7 4.6 1.9l-1.4 1.4A4.5 4.5 0 0 0 12 16a4.5 4.5 0 0 0-3.2 1.3l-1.4-1.4A6.4 6.4 0 0 1 12 14zm0-4c2.8 0 5.3 1.1 7.1 2.9l-1.4 1.4A8.5 8.5 0 0 0 12 12a8.5 8.5 0 0 0-5.7 2.3L4.9 12.9A10.4 10.4 0 0 1 12 10z"/></svg>
-    <!-- Battery -->
-    <svg viewBox="0 0 28 14"><rect x="0" y="1" width="24" height="12" rx="3" ry="3" stroke="#fff" stroke-width="1.5" fill="none"/><rect x="24" y="4" width="3" height="6" rx="1" fill="#fff" opacity="0.4"/><rect x="2" y="3" width="18" height="8" rx="1.5" fill="#30d158"/></svg>
+    <svg viewBox="0 0 28 14"><rect x="0" y="1" width="24" height="12" rx="3" ry="3" stroke="#000" stroke-width="1.5" fill="none"/><rect x="24" y="4" width="3" height="6" rx="1" fill="#000" opacity="0.4"/><rect x="2" y="3" width="18" height="8" rx="1.5" fill="#34c759"/></svg>
   </div>
 </div>
 
-<!-- Nav bar -->
-<div class="nav-bar">
-  <div class="nav-back">
-    <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-    <span id="backCount">3</span>
+<!-- Conversation screen (animé lors des switchs) -->
+<div id="convScreen">
+  <div class="nav-bar">
+    <div class="nav-back">
+      <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+      <span>Messages</span>
+    </div>
+    <div class="nav-center">
+      <div class="nav-avatar" id="navAvatar"></div>
+      <div class="nav-name"   id="navName"></div>
+    </div>
+    <div class="nav-action">📞</div>
   </div>
-  <div class="nav-center">
-    <div class="nav-avatar" id="navAvatar"></div>
-    <div class="nav-name" id="navName"></div>
+
+  <div class="messages-area" id="messagesArea">
+    <div class="messages-inner" id="messagesInner"></div>
   </div>
-  <div class="nav-action">📞</div>
+
+  <div class="input-bar">
+    <div class="input-icon">📷</div>
+    <div class="input-field">
+      <span id="inputPlaceholder">iMessage</span>
+      <span id="inputTyped"></span><span id="inputCursor" class="input-cursor"></span>
+    </div>
+    <div class="input-icon">🎤</div>
+  </div>
 </div>
 
-<!-- Messages -->
-<div class="messages-area" id="messagesArea">
-  <div class="messages-inner" id="messagesInner"></div>
-</div>
-
-<!-- Input bar -->
-<div class="input-bar">
-  <div class="input-icon">📷</div>
-  <div class="input-field">
-    <span id="inputPlaceholder">iMessage</span>
-    <span id="inputTyped"></span><span id="inputCursor" class="input-cursor"></span>
-  </div>
-  <div class="input-icon">🎤</div>
-</div>
-
-<!-- Home indicator -->
+<!-- Home indicator (fixe) -->
 <div class="home-indicator"><div class="home-bar"></div></div>
 
 <script>
 (async () => {
-  // Load scenario (supports ?scenario=file.json URL param)
   const params = new URLSearchParams(window.location.search);
   const scenarioFile = params.get('scenario') || 'scenario.json';
   const res = await fetch(`./${scenarioFile}`);
   const scenario = await res.json();
-  const { config, messages, notifications = [] } = scenario;
 
-  // Default sounds — used if not overridden in config.sounds
+  // ── Normalise ancien format (messages[]) vers nouveau (script[]) ──────────
+  function normalizeScenario(s) {
+    if (s.script) return s;
+
+    const cfg = s.config || {};
+    const cid = '__contact__';
+    const contacts = { [cid]: {
+      name: cfg.contactName || 'Contact',
+      avatarEmoji: cfg.avatarEmoji || '👤',
+      avatarImage: cfg.avatarImage,
+    }};
+
+    const script = [{ action: 'open', contact: cid, delay: 0 }];
+    const notifs  = s.notifications || [];
+
+    // Notification de début
+    const pre = notifs.filter(n => n.at === -1);
+    if (pre.length) {
+      script.push({ action: 'notification', contact: cid, title: pre[0].title, body: pre[0].body, delay: 800 });
+      script.push({ action: '_pause', delay: 3000 });
+    }
+
+    (s.messages || []).forEach((msg, i) => {
+      script.push({ action: 'message', ...msg });
+      notifs.filter(n => n.at === i).forEach(n => {
+        script.push({ action: 'notification', contact: cid, title: n.title, body: n.body, delay: 600 });
+      });
+    });
+
+    return { config: cfg, contacts, script };
+  }
+
+  const { config, contacts = {}, script = [] } = normalizeScenario(scenario);
+
   const DEFAULT_SOUNDS = {
-    send:         'assets/send.mp3',
-    receive:      'assets/receive.mp3',
-    typing:       'assets/typing.mp3',
-    notification: 'assets/notification.mp3',
+    send: 'assets/send.mp3', receive: 'assets/receive.mp3',
+    typing: 'assets/typing.mp3', notification: 'assets/notification.mp3',
   };
   const sounds = Object.assign({}, DEFAULT_SOUNDS, config.sounds || {});
 
-  // Setup contact info — photo or emoji fallback
-  const navAvatarEl = document.getElementById('navAvatar');
-  if (config.avatarImage) {
-    const img = document.createElement('img');
-    img.src = config.avatarImage;
-    img.alt = config.contactName || '';
-    navAvatarEl.appendChild(img);
-  } else {
-    navAvatarEl.textContent = config.avatarEmoji || '👤';
-  }
-  document.getElementById('navName').textContent = config.conversationTitle || config.contactName || 'Contact';
+  // ── DOM refs ─────────────────────────────────────────────────────────────
+  const inner      = document.getElementById('messagesInner');
+  const area       = document.getElementById('messagesArea');
+  const convScreen = document.getElementById('convScreen');
 
-  const receivedName = config.contactName || 'Contact';
-  const sentName     = config.myName || 'Moi';
+  // ── State ────────────────────────────────────────────────────────────────
+  let currentContactId = null;
+  const convHistories  = {};   // contactId → innerHTML sauvegardé
 
-  // Build avatar HTML reused for each received bubble
-  const avatarHTML = config.avatarImage
-    ? `<div class="bubble-avatar"><img src="${config.avatarImage}" alt=""></div>`
-    : `<div class="bubble-avatar">${config.avatarEmoji || '👤'}</div>`;
-
-  // Détection emoji-only via Unicode property escapes (V8/Chromium 64+)
-  // Supprime tout ce qui est emoji, ZWJ, sélecteurs de variation, modificateurs
-  const EMOJI_REGEX = /[\p{Emoji_Presentation}\p{Extended_Pictographic}](\u{FE0F})?(\u{20E3})?(\u{200D}[\p{Emoji_Presentation}\p{Extended_Pictographic}](\u{FE0F})?(\u{20E3})?)*|\u{FE0F}|\u{200D}|\u{20E3}|[\u{1F1E0}-\u{1F1FF}]/gu;
-
-  function isEmojiOnly(text) {
-    const stripped = text.trim();
-    if (!stripped) return false;
-    const withoutEmoji = stripped.replace(EMOJI_REGEX, '').replace(/\s/g, '');
-    return withoutEmoji.length === 0;
-  }
-
-  // Compte le nombre d'emoji pour adapter la taille d'affichage
-  function countEmoji(text) {
-    return (text.match(EMOJI_REGEX) || []).length;
-  }
-
-  // Emit audio event: intercepted in real-time by render.py via console listener
-  // Pour le typing, on envoie la durée pour que Python tronque le son exactement.
+  // ── Audio ────────────────────────────────────────────────────────────────
   function recordAudio(key, extra = {}) {
     console.log(JSON.stringify({ __audio: key, ...extra }));
   }
-
-  function playSound(src, volume = 0.8) {
+  function playSound(src, vol = 0.8) {
     if (!src) return null;
-    try {
-      const audio = new Audio(src);
-      audio.volume = volume;
-      audio.play().catch(() => {});
-      return audio;
-    } catch(e) { return null; }
+    try { const a = new Audio(src); a.volume = vol; a.play().catch(()=>{}); return a; }
+    catch(e) { return null; }
   }
-
   function startTypingSound(src, durationMs) {
     if (!src) return () => {};
-    // Un seul événement avec la durée → Python joue le son exactement le temps voulu
     recordAudio('typing', { ms: durationMs });
-    // Lecture en boucle dans le navigateur
-    const audio = new Audio(src);
-    audio.loop   = true;
-    audio.volume = 0.35;
-    audio.play().catch(() => {});
-    // Retourne une fonction qui coupe le son net
-    return () => {
-      audio.pause();
-      audio.currentTime = 0;
-    };
+    const a = new Audio(src); a.loop = true; a.volume = 0.35;
+    a.play().catch(()=>{});
+    return () => { a.pause(); a.currentTime = 0; };
   }
 
-  // Simule la saisie du message dans le champ en bas avant envoi
+  // ── Emoji helpers ────────────────────────────────────────────────────────
+  const EMOJI_RE = /[\p{Emoji_Presentation}\p{Extended_Pictographic}](\u{FE0F})?(\u{20E3})?(\u{200D}[\p{Emoji_Presentation}\p{Extended_Pictographic}](\u{FE0F})?(\u{20E3})?)*|\u{FE0F}|\u{200D}|\u{20E3}|[\u{1F1E0}-\u{1F1FF}]/gu;
+  const isEmojiOnly = t => { const s=t.trim(); return s.length>0 && s.replace(EMOJI_RE,'').replace(/\s/g,'').length===0; };
+  const countEmoji  = t => (t.match(EMOJI_RE)||[]).length;
+
+  function renderText(t) {
+    return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  }
+
+  // ── Navigation bar ───────────────────────────────────────────────────────
+  function updateNavBar(contact) {
+    const avatarEl = document.getElementById('navAvatar');
+    avatarEl.innerHTML = '';
+    if (contact.avatarImage) {
+      const img = document.createElement('img');
+      img.src = contact.avatarImage; img.alt = '';
+      avatarEl.appendChild(img);
+    } else {
+      avatarEl.textContent = contact.avatarEmoji || '👤';
+    }
+    document.getElementById('navName').textContent = contact.name || 'Contact';
+  }
+
+  // ── Build avatar HTML (bulles + typing) ──────────────────────────────────
+  function avatarHTML(contact) {
+    if (!contact) return '';
+    return contact.avatarImage
+      ? `<div class="bubble-avatar"><img src="${contact.avatarImage}" alt=""></div>`
+      : `<div class="bubble-avatar">${contact.avatarEmoji || '👤'}</div>`;
+  }
+
+  // ── Notification ─────────────────────────────────────────────────────────
+  let notifTimeout = null;
+  function showNotification(title, body, contactId) {
+    const contact = contacts[contactId];
+    const iconEl  = document.getElementById('notifIcon');
+    iconEl.innerHTML = '';
+    if (contact?.avatarImage) {
+      const img = document.createElement('img');
+      img.src = contact.avatarImage; img.alt = '';
+      iconEl.appendChild(img);
+    } else if (contact?.avatarEmoji) {
+      iconEl.textContent = contact.avatarEmoji;
+    } else {
+      iconEl.textContent = '💬';
+    }
+    document.getElementById('notifTitle').innerHTML = renderText(title);
+    document.getElementById('notifBody').innerHTML  = renderText(body);
+    const banner = document.getElementById('notifBanner');
+    banner.classList.add('show');
+    recordAudio('notification');
+    playSound(sounds.notification);
+    if (notifTimeout) clearTimeout(notifTimeout);
+    notifTimeout = setTimeout(() => banner.classList.remove('show'), 4000);
+  }
+
+  // ── Scroll ───────────────────────────────────────────────────────────────
+  function scrollToBottom() { area.scrollTop = area.scrollHeight; }
+
+  // ── Input field ──────────────────────────────────────────────────────────
+  function resetInput() {
+    document.getElementById('inputPlaceholder').style.display = '';
+    document.getElementById('inputTyped').textContent = '';
+    document.getElementById('inputCursor').classList.remove('blink');
+  }
+
   async function typeInInput(text) {
     const placeholder = document.getElementById('inputPlaceholder');
     const typed       = document.getElementById('inputTyped');
     const cursor      = document.getElementById('inputCursor');
-
     placeholder.style.display = 'none';
     cursor.classList.add('blink');
     typed.textContent = '';
-
-    // Émet un seul event typing (Python le tronquera au prochain 'send')
     recordAudio('typing');
-
-    const chars = [...text]; // spread correct pour les emoji multi-codepoint
-    for (const char of chars) {
+    for (const char of [...text]) {
       typed.textContent += char;
       playSound(sounds.typing, 0.22);
       await new Promise(r => setTimeout(r, 42 + Math.random() * 38));
     }
-
-    // Courte pause avant envoi (hésitation naturelle)
     await new Promise(r => setTimeout(r, 200 + Math.random() * 180));
-
-    // Effacement du champ → message "envoyé"
     typed.textContent = '';
     cursor.classList.remove('blink');
     placeholder.style.display = '';
   }
 
-  // Safely render text with emojis (escape HTML, preserve line breaks)
-  function renderText(text) {
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/\n/g, '<br>');
+  // ── Open conversation ────────────────────────────────────────────────────
+  function openConversation(contactId) {
+    currentContactId = contactId;
+    const contact = contacts[contactId];
+    if (!contact) return;
+    updateNavBar(contact);
+    inner.innerHTML = convHistories[contactId] || '';
+    scrollToBottom();
   }
 
-  // Notification helper
-  function showNotification(title, body) {
-    document.getElementById('notifTitle').innerHTML = renderText(title);
-    document.getElementById('notifBody').innerHTML = renderText(body);
-    const banner = document.getElementById('notifBanner');
-    banner.classList.add('show');
-    recordAudio('notification');
-    playSound(sounds.notification);
-    setTimeout(() => banner.classList.remove('show'), 4000);
+  // ── Switch conversation (avec animation) ─────────────────────────────────
+  async function switchConversation(toContactId) {
+    // Sauvegarde l'historique de la conversation courante
+    if (currentContactId) convHistories[currentContactId] = inner.innerHTML;
+
+    // Exit : glisse vers la droite et s'efface
+    convScreen.classList.add('switch-exit');
+    await new Promise(r => setTimeout(r, 320));
+
+    // Met à jour le contenu pendant que c'est hors écran
+    currentContactId = toContactId;
+    const contact = contacts[toContactId];
+    updateNavBar(contact);
+    inner.innerHTML = convHistories[toContactId] || '';
+    resetInput();
+    scrollToBottom();
+
+    // Prépare l'entrée depuis la droite (sans transition)
+    convScreen.classList.remove('switch-exit');
+    convScreen.classList.add('switch-enter-prep');
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    // Enter : glisse vers le centre
+    convScreen.classList.remove('switch-enter-prep');
+    convScreen.classList.add('switch-enter');
+    await new Promise(r => setTimeout(r, 360));
+    convScreen.classList.remove('switch-enter');
   }
 
-  // Show initial notification (at: -1 means before messages start)
-  const preNotifs = notifications.filter(n => n.at === -1);
-  if (preNotifs.length > 0) {
-    await new Promise(r => setTimeout(r, 800));
-    showNotification(preNotifs[0].title, preNotifs[0].body);
-    await new Promise(r => setTimeout(r, 3000));
-  }
+  // ── Affiche un message ────────────────────────────────────────────────────
+  async function showMessage(action) {
+    const contact = contacts[currentContactId];
+    const myName  = config.myName || 'Moi';
 
-  const inner = document.getElementById('messagesInner');
-  const area  = document.getElementById('messagesArea');
+    // Saisie dans le champ pour les messages envoyés
+    if (action.sender === 'sent') await typeInInput(action.text);
 
-  function scrollToBottom() {
-    area.scrollTop = area.scrollHeight;
-  }
-
-  for (let i = 0; i < messages.length; i++) {
-    const msg = messages[i];
-
-    // Pause before this message
-    await new Promise(r => setTimeout(r, msg.delay || 1000));
-
-    // Show typing indicator for received messages
-    if (msg.sender === 'received' && msg.typingDuration) {
+    // Indicateur de frappe pour les messages reçus
+    if (action.sender === 'received' && action.typingDuration) {
       const typingRow = document.createElement('div');
       typingRow.className = 'typing-indicator';
-      typingRow.innerHTML = `
-        ${avatarHTML}
+      typingRow.innerHTML = `${avatarHTML(contact)}
         <div class="typing-bubble">
-          <div class="typing-dot"></div>
-          <div class="typing-dot"></div>
-          <div class="typing-dot"></div>
+          <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
         </div>`;
       inner.appendChild(typingRow);
       scrollToBottom();
       await new Promise(r => requestAnimationFrame(r));
       typingRow.classList.add('visible');
-
-      const stopTyping = startTypingSound(sounds.typing, msg.typingDuration);
-      await new Promise(r => setTimeout(r, msg.typingDuration));
+      const stopTyping = startTypingSound(sounds.typing, action.typingDuration);
+      await new Promise(r => setTimeout(r, action.typingDuration));
       stopTyping();
       typingRow.remove();
     }
 
-    // Pour les messages envoyés : saisie dans le champ avant apparition de la bulle
-    if (msg.sender === 'sent') {
-      await typeInInput(msg.text);
-    }
+    // Création de la bulle
+    const emojiOnly = isEmojiOnly(action.text);
+    const n = emojiOnly ? countEmoji(action.text) : 0;
+    const sizeClass = n >= 7 ? ' emoji-many' : n >= 4 ? ' emoji-few' : '';
+    const bubbleClass = `bubble ${action.sender}${emojiOnly ? ' emoji-only' + sizeClass : ''}`;
+    const senderName  = action.sender === 'received' ? (contact?.name || 'Contact') : myName;
 
-    // Create bubble — fire sound exactly when bubble becomes visible
-    const emojiOnly  = isEmojiOnly(msg.text);
-    let emojiSizeClass = '';
-    if (emojiOnly) {
-      const n = countEmoji(msg.text);
-      if (n >= 7)      emojiSizeClass = ' emoji-many';
-      else if (n >= 4) emojiSizeClass = ' emoji-few';
-    }
-    const bubbleClass = `bubble ${msg.sender}${emojiOnly ? ' emoji-only' + emojiSizeClass : ''}`;
-    const name  = msg.sender === 'received' ? receivedName : sentName;
     const row = document.createElement('div');
-    row.className = `bubble-row ${msg.sender}`;
-    const bubbleContent = `
-      <div class="bubble-content">
-        <span class="bubble-name">${renderText(name)}</span>
-        <div class="${bubbleClass}">${renderText(msg.text)}</div>
-      </div>`;
-    row.innerHTML = msg.sender === 'received'
-      ? `${avatarHTML}${bubbleContent}`
-      : bubbleContent;
+    row.className = `bubble-row ${action.sender}`;
+    const content = `<div class="bubble-content">
+      <span class="bubble-name">${renderText(senderName)}</span>
+      <div class="${bubbleClass}">${renderText(action.text)}</div>
+    </div>`;
+    row.innerHTML = action.sender === 'received' ? `${avatarHTML(contact)}${content}` : content;
     inner.appendChild(row);
     scrollToBottom();
 
-    // One rAF: DOM is painted, bubble is in position but still transparent
     await new Promise(r => requestAnimationFrame(r));
-
-    // Add .visible + emit sound atomically on the same frame
     row.classList.add('visible');
-    if (msg.sender === 'sent') {
-      recordAudio('send');
-      playSound(sounds.send);
-    } else {
-      recordAudio('receive');
-      playSound(sounds.receive);
-    }
 
-    // Mid-conversation notifications
-    const midNotifs = notifications.filter(n => n.at === i);
-    for (const notif of midNotifs) {
-      await new Promise(r => setTimeout(r, 600));
-      showNotification(notif.title, notif.body);
-    }
+    if (action.sender === 'sent') { recordAudio('send');    playSound(sounds.send); }
+    else                          { recordAudio('receive');  playSound(sounds.receive); }
 
     scrollToBottom();
   }
 
-  // Signal to Playwright that rendering is done
+  // ── Boucle principale du script ───────────────────────────────────────────
+  for (const action of script) {
+    await new Promise(r => setTimeout(r, action.delay || 0));
+
+    if (action.action === 'open') {
+      openConversation(action.contact);
+
+    } else if (action.action === 'message') {
+      await showMessage(action);
+
+    } else if (action.action === 'notification') {
+      // Non-bloquant : la notification s'affiche et le script continue
+      showNotification(action.title, action.body, action.contact);
+
+    } else if (action.action === 'switch') {
+      await switchConversation(action.to);
+
+    } else if (action.action === '_pause') {
+      // Action interne pour le format legacy
+    }
+  }
+
   window.__RENDER_DONE__ = true;
 })();
 </script>
