@@ -243,8 +243,29 @@
     display: flex;
     align-items: center;
     padding: 0 36px;
-    color: #aeaeb2;
     font-size: 34px;
+    overflow: hidden;
+    gap: 0;
+  }
+  #inputPlaceholder { color: #aeaeb2; flex-shrink: 0; }
+  #inputTyped       { color: #000; white-space: nowrap; overflow: hidden; }
+  .input-cursor {
+    display: inline-block;
+    width: 3px;
+    height: 44px;
+    background: #007aff;
+    border-radius: 2px;
+    flex-shrink: 0;
+    opacity: 0;
+    margin-left: 2px;
+    align-self: center;
+  }
+  .input-cursor.blink {
+    animation: cursorBlink 0.55s step-end infinite;
+  }
+  @keyframes cursorBlink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
   }
   .input-icon {
     width: 72px;
@@ -359,7 +380,10 @@
 <!-- Input bar -->
 <div class="input-bar">
   <div class="input-icon">📷</div>
-  <div class="input-field">iMessage</div>
+  <div class="input-field">
+    <span id="inputPlaceholder">iMessage</span>
+    <span id="inputTyped"></span><span id="inputCursor" class="input-cursor"></span>
+  </div>
   <div class="input-icon">🎤</div>
 </div>
 
@@ -447,6 +471,35 @@
     };
   }
 
+  // Simule la saisie du message dans le champ en bas avant envoi
+  async function typeInInput(text) {
+    const placeholder = document.getElementById('inputPlaceholder');
+    const typed       = document.getElementById('inputTyped');
+    const cursor      = document.getElementById('inputCursor');
+
+    placeholder.style.display = 'none';
+    cursor.classList.add('blink');
+    typed.textContent = '';
+
+    // Émet un seul event typing (Python le tronquera au prochain 'send')
+    recordAudio('typing');
+
+    const chars = [...text]; // spread correct pour les emoji multi-codepoint
+    for (const char of chars) {
+      typed.textContent += char;
+      playSound(sounds.typing, 0.22);
+      await new Promise(r => setTimeout(r, 42 + Math.random() * 38));
+    }
+
+    // Courte pause avant envoi (hésitation naturelle)
+    await new Promise(r => setTimeout(r, 200 + Math.random() * 180));
+
+    // Effacement du champ → message "envoyé"
+    typed.textContent = '';
+    cursor.classList.remove('blink');
+    placeholder.style.display = '';
+  }
+
   // Safely render text with emojis (escape HTML, preserve line breaks)
   function renderText(text) {
     return text
@@ -508,6 +561,11 @@
       await new Promise(r => setTimeout(r, msg.typingDuration));
       stopTyping();
       typingRow.remove();
+    }
+
+    // Pour les messages envoyés : saisie dans le champ avant apparition de la bulle
+    if (msg.sender === 'sent') {
+      await typeInInput(msg.text);
     }
 
     // Create bubble — fire sound exactly when bubble becomes visible
