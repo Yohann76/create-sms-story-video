@@ -290,9 +290,41 @@
     display: flex; align-items: center; justify-content: center;
   }
   .home-bar { width: 200px; height: 10px; background: #000; border-radius: 5px; opacity: 0.2; }
+
+  /* ── Layout TikTok safe zones ── */
+  #tikTokRow {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    min-height: 0;
+  }
+  #smsColumn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    min-width: 0;
+  }
+  /* Bande droite blanche — zone boutons TikTok (j'aime, partage, etc.) */
+  #tikTokRightBand {
+    width: 140px;
+    background: #fff;
+    flex-shrink: 0;
+  }
+  /* Bande noire en bas — zone pseudo + légende TikTok */
+  #tikTokBottomBand {
+    height: 300px;
+    background: #000;
+    flex-shrink: 0;
+  }
 </style>
 </head>
 <body>
+
+<div id="tikTokRow">
+<div id="smsColumn">
 
 <!-- Notification banner (hors convScreen pour ne pas être affectée par les transitions) -->
 <div class="notification-banner" id="notifBanner">
@@ -345,6 +377,12 @@
 
 <!-- Home indicator (fixe) -->
 <div class="home-indicator"><div class="home-bar"></div></div>
+
+</div><!-- /smsColumn -->
+<div id="tikTokRightBand"></div>
+</div><!-- /tikTokRow -->
+
+<div id="tikTokBottomBand"></div>
 
 <script>
 (async () => {
