@@ -1,0 +1,32 @@
+{
+  "config": {
+    "contactName": "Léa",
+    "myName": "Moi",
+    "avatarEmoji": "👩",
+    "avatarImage": "assets/avatar.jpg",
+    "conversationTitle": "Léa",
+    "sounds": {
+      "send":         "assets/song-10-08-2026/send-song.mp3",
+      "receive":      "assets/song-10-08-2026/reception-song.mp3",
+      "typing":       "assets/song-10-08-2026/typing-song.MP3",
+      "notification": "assets/song-10-08-2026/notification-song.mp3"
+    }
+
+  },
+  "messages": [
+    { "sender": "received", "text": "Salut ! T'es dispo ce soir ?", "delay": 1800, "typingDuration": 2800 },
+    { "sender": "sent", "text": "Oui pourquoi ? 👀", "delay": 3000 },
+    { "sender": "received", "text": "On organise une soirée chez Nico, tout le monde sera là", "delay": 3500, "typingDuration": 3500 },
+    { "sender": "sent", "text": "Ah ouais sérieux ?! À quelle heure ?", "delay": 3200 },
+    { "sender": "received", "text": "Vers 20h, mais on peut commencer à arriver dès 19h30", "delay": 4000, "typingDuration": 3000 },
+    { "sender": "sent", "text": "Je peux amener quelque chose ?", "delay": 3500 },
+    { "sender": "received", "text": "Ramène des chips si t'as le courage 😂", "delay": 3800, "typingDuration": 2500 },
+    { "sender": "sent", "text": "😂😂😂", "delay": 1800 },
+    { "sender": "sent", "text": "Haha ok pas de problème 👌", "delay": 2200 },
+    { "sender": "received", "text": "Super ! On t'attend alors 🎉", "delay": 3200, "typingDuration": 2200 },
+    { "sender": "sent", "text": "Trop hâte, à ce soir ! 😄", "delay": 2500 }
+  ],
+  "notifications": [
+    { "at": -1, "title": "Léa", "body": "Salut ! T'es dispo ce soir ?" }
+  ]
+}

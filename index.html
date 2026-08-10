@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1080" />
+<title>SMS Story</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1080px;
+    height: 1920px;
+    background: #fff;
+    font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Arial,
+                 "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Status bar ── */
+  .status-bar {
+    flex-shrink: 0;
+    width: 100%;
+    height: 80px;
+    background: #f2f2f7;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 60px 14px;
+    color: #000;
+    font-size: 32px;
+    font-weight: 600;
+  }
+  .status-bar .time { font-size: 36px; font-weight: 700; }
+  .status-icons { display: flex; gap: 14px; align-items: center; }
+  .status-icons svg { width: 36px; height: 36px; fill: #000; }
+
+  /* ── Navigation bar ── */
+  .nav-bar {
+    flex-shrink: 0;
+    width: 100%;
+    height: 140px;
+    background: rgba(242, 242, 247, 0.95);
+    border-bottom: 1px solid #c6c6c8;
+    display: flex;
+    align-items: center;
+    padding: 0 40px;
+    gap: 32px;
+  }
+  .nav-back {
+    color: #007aff;
+    font-size: 36px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .nav-back svg { width: 28px; height: 28px; fill: #007aff; }
+  .nav-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .nav-avatar {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: #d1d1d6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 46px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .nav-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+  .nav-name {
+    color: #000;
+    font-size: 30px;
+    font-weight: 600;
+  }
+  .nav-action { color: #007aff; font-size: 32px; }
+
+  /* ── Messages area ── */
+  .messages-area {
+    flex: 1;
+    overflow: hidden;
+    background: #fff;
+    padding: 30px 30px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .messages-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* ── Avatar miniature (bulles reçues) ── */
+  .bubble-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #d1d1d6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    overflow: hidden;
+    flex-shrink: 0;
+    align-self: flex-end;
+    margin-bottom: 4px;
+  }
+  .bubble-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+  .bubble-row.sent .bubble-avatar { display: none; }
+
+  /* ── Wrapper nom + bulle ── */
+  .bubble-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 68%;
+  }
+  .bubble-name {
+    font-size: 26px;
+    font-weight: 500;
+    color: #8e8e93;
+    padding: 0 12px;
+  }
+  .bubble-row.sent .bubble-name { text-align: right; }
+  /* Quand emoji-only le max-width ne s'applique pas */
+  .bubble-content:has(.emoji-only) { max-width: 80%; }
+
+  /* ── Bubbles ── */
+  .bubble-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+    transition: opacity 0.12s ease-out, transform 0.14s ease-out;
+  }
+  .bubble-row.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  .bubble-row.sent { flex-direction: row-reverse; }
+
+  .bubble {
+    padding: 22px 32px;
+    border-radius: 36px;
+    font-size: 38px;
+    line-height: 1.4;
+    word-break: break-word;
+    position: relative;
+  }
+  .bubble.received {
+    background: #e5e5ea;
+    color: #000;
+    border-bottom-left-radius: 10px;
+  }
+  .bubble.sent {
+    background: #34c759;
+    color: #fff;
+    border-bottom-right-radius: 10px;
+  }
+  /* Messages composés uniquement d'emojis → affichage agrandi, fond transparent */
+  .bubble.emoji-only {
+    background: transparent !important;
+    font-size: 80px;
+    padding: 8px 16px;
+    border-radius: 0;
+    line-height: 1.1;
+  }
+
+  /* ── Typing indicator ── */
+  .typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+    transition: opacity 0.12s ease-out, transform 0.14s ease-out;
+  }
+  .typing-indicator.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  .typing-bubble {
+    background: #e5e5ea;
+    border-radius: 36px;
+    border-bottom-left-radius: 10px;
+    padding: 22px 36px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+  .typing-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #8e8e93;
+    animation: typingBounce 1.2s ease-in-out infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-10px); opacity: 1; }
+  }
+
+  /* ── Input bar ── */
+  .input-bar {
+    flex-shrink: 0;
+    height: 130px;
+    background: #f2f2f7;
+    border-top: 1px solid #c6c6c8;
+    display: flex;
+    align-items: center;
+    padding: 0 30px;
+    gap: 20px;
+  }
+  .input-field {
+    flex: 1;
+    height: 80px;
+    background: #fff;
+    border-radius: 40px;
+    border: 1px solid #c6c6c8;
+    display: flex;
+    align-items: center;
+    padding: 0 36px;
+    color: #aeaeb2;
+    font-size: 34px;
+  }
+  .input-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #e5e5ea;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+  }
+
+  /* ── Notification banner ── */
+  .notification-banner {
+    position: absolute;
+    top: -220px;
+    left: 40px;
+    right: 40px;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border-radius: 28px;
+    padding: 24px 30px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    transition: top 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 100;
+    border: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  }
+  .notification-banner.show { top: 90px; }
+  .notif-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 16px;
+    background: #34c759;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    flex-shrink: 0;
+  }
+  .notif-content { flex: 1; }
+  .notif-app { color: #8e8e93; font-size: 26px; margin-bottom: 4px; }
+  .notif-title { color: #000; font-size: 32px; font-weight: 600; }
+  .notif-body { color: #3c3c43; font-size: 30px; margin-top: 4px; }
+  .notif-time { color: #8e8e93; font-size: 26px; }
+
+  /* ── Home indicator ── */
+  .home-indicator {
+    flex-shrink: 0;
+    height: 50px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .home-bar {
+    width: 200px;
+    height: 10px;
+    background: #000;
+    border-radius: 5px;
+    opacity: 0.2;
+  }
+</style>
+</head>
+<body>
+
+<!-- Notification banner -->
+<div class="notification-banner" id="notifBanner">
+  <div class="notif-icon">💬</div>
+  <div class="notif-content">
+    <div class="notif-app">Messages</div>
+    <div class="notif-title" id="notifTitle"></div>
+    <div class="notif-body" id="notifBody"></div>
+  </div>
+  <div class="notif-time">now</div>
+</div>
+
+<!-- Status bar -->
+<div class="status-bar">
+  <span class="time">9:41</span>
+  <div class="status-icons">
+    <!-- Signal -->
+    <svg viewBox="0 0 24 24"><rect x="0" y="14" width="4" height="10"/><rect x="5" y="9" width="4" height="15"/><rect x="10" y="4" width="4" height="20"/><rect x="15" y="0" width="4" height="24" opacity="0.3"/></svg>
+    <!-- WiFi -->
+    <svg viewBox="0 0 24 24"><path d="M12 18.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM12 14c1.8 0 3.4.7 4.6 1.9l-1.4 1.4A4.5 4.5 0 0 0 12 16a4.5 4.5 0 0 0-3.2 1.3l-1.4-1.4A6.4 6.4 0 0 1 12 14zm0-4c2.8 0 5.3 1.1 7.1 2.9l-1.4 1.4A8.5 8.5 0 0 0 12 12a8.5 8.5 0 0 0-5.7 2.3L4.9 12.9A10.4 10.4 0 0 1 12 10z"/></svg>
+    <!-- Battery -->
+    <svg viewBox="0 0 28 14"><rect x="0" y="1" width="24" height="12" rx="3" ry="3" stroke="#fff" stroke-width="1.5" fill="none"/><rect x="24" y="4" width="3" height="6" rx="1" fill="#fff" opacity="0.4"/><rect x="2" y="3" width="18" height="8" rx="1.5" fill="#30d158"/></svg>
+  </div>
+</div>
+
+<!-- Nav bar -->
+<div class="nav-bar">
+  <div class="nav-back">
+    <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    <span id="backCount">3</span>
+  </div>
+  <div class="nav-center">
+    <div class="nav-avatar" id="navAvatar"></div>
+    <div class="nav-name" id="navName"></div>
+  </div>
+  <div class="nav-action">📞</div>
+</div>
+
+<!-- Messages -->
+<div class="messages-area" id="messagesArea">
+  <div class="messages-inner" id="messagesInner"></div>
+</div>
+
+<!-- Input bar -->
+<div class="input-bar">
+  <div class="input-icon">📷</div>
+  <div class="input-field">iMessage</div>
+  <div class="input-icon">🎤</div>
+</div>
+
+<!-- Home indicator -->
+<div class="home-indicator"><div class="home-bar"></div></div>
+
+<script>
+(async () => {
+  // Load scenario (supports ?scenario=file.json URL param)
+  const params = new URLSearchParams(window.location.search);
+  const scenarioFile = params.get('scenario') || 'scenario.json';
+  const res = await fetch(`./${scenarioFile}`);
+  const scenario = await res.json();
+  const { config, messages, notifications = [] } = scenario;
+
+  // Default sounds — used if not overridden in config.sounds
+  const DEFAULT_SOUNDS = {
+    send:         'assets/send.mp3',
+    receive:      'assets/receive.mp3',
+    typing:       'assets/typing.mp3',
+    notification: 'assets/notification.mp3',
+  };
+  const sounds = Object.assign({}, DEFAULT_SOUNDS, config.sounds || {});
+
+  // Setup contact info — photo or emoji fallback
+  const navAvatarEl = document.getElementById('navAvatar');
+  if (config.avatarImage) {
+    const img = document.createElement('img');
+    img.src = config.avatarImage;
+    img.alt = config.contactName || '';
+    navAvatarEl.appendChild(img);
+  } else {
+    navAvatarEl.textContent = config.avatarEmoji || '👤';
+  }
+  document.getElementById('navName').textContent = config.conversationTitle || config.contactName || 'Contact';
+
+  const receivedName = config.contactName || 'Contact';
+  const sentName     = config.myName || 'Moi';
+
+  // Build avatar HTML reused for each received bubble
+  const avatarHTML = config.avatarImage
+    ? `<div class="bubble-avatar"><img src="${config.avatarImage}" alt=""></div>`
+    : `<div class="bubble-avatar">${config.avatarEmoji || '👤'}</div>`;
+
+  // Detect emoji-only messages (no letters/digits/punctuation — only emoji + whitespace)
+  function isEmojiOnly(text) {
+    const stripped = text.replace(/\s/g, '');
+    // Remove all emoji characters; if nothing is left, it's emoji-only
+    const withoutEmoji = stripped.replace(
+      /[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27BF}]|[\u{2300}-\u{23FF}]|[\u{2B00}-\u{2BFF}]|[\u{FE00}-\u{FE0F}]|[\u{1F900}-\u{1F9FF}]|‍/gu,
+      ''
+    );
+    return stripped.length > 0 && withoutEmoji.length === 0;
+  }
+
+  // Emit audio event: intercepted in real-time by render.py via console listener
+  // Pour le typing, on envoie la durée pour que Python tronque le son exactement.
+  function recordAudio(key, extra = {}) {
+    console.log(JSON.stringify({ __audio: key, ...extra }));
+  }
+
+  function playSound(src, volume = 0.8) {
+    if (!src) return null;
+    try {
+      const audio = new Audio(src);
+      audio.volume = volume;
+      audio.play().catch(() => {});
+      return audio;
+    } catch(e) { return null; }
+  }
+
+  function startTypingSound(src, durationMs) {
+    if (!src) return () => {};
+    // Un seul événement avec la durée → Python joue le son exactement le temps voulu
+    recordAudio('typing', { ms: durationMs });
+    // Lecture en boucle dans le navigateur
+    const audio = new Audio(src);
+    audio.loop   = true;
+    audio.volume = 0.35;
+    audio.play().catch(() => {});
+    // Retourne une fonction qui coupe le son net
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+    };
+  }
+
+  // Safely render text with emojis (escape HTML, preserve line breaks)
+  function renderText(text) {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\n/g, '<br>');
+  }
+
+  // Notification helper
+  function showNotification(title, body) {
+    document.getElementById('notifTitle').innerHTML = renderText(title);
+    document.getElementById('notifBody').innerHTML = renderText(body);
+    const banner = document.getElementById('notifBanner');
+    banner.classList.add('show');
+    recordAudio('notification');
+    playSound(sounds.notification);
+    setTimeout(() => banner.classList.remove('show'), 4000);
+  }
+
+  // Show initial notification (at: -1 means before messages start)
+  const preNotifs = notifications.filter(n => n.at === -1);
+  if (preNotifs.length > 0) {
+    await new Promise(r => setTimeout(r, 800));
+    showNotification(preNotifs[0].title, preNotifs[0].body);
+    await new Promise(r => setTimeout(r, 3000));
+  }
+
+  const inner = document.getElementById('messagesInner');
+  const area  = document.getElementById('messagesArea');
+
+  function scrollToBottom() {
+    area.scrollTop = area.scrollHeight;
+  }
+
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+
+    // Pause before this message
+    await new Promise(r => setTimeout(r, msg.delay || 1000));
+
+    // Show typing indicator for received messages
+    if (msg.sender === 'received' && msg.typingDuration) {
+      const typingRow = document.createElement('div');
+      typingRow.className = 'typing-indicator';
+      typingRow.innerHTML = `
+        ${avatarHTML}
+        <div class="typing-bubble">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>`;
+      inner.appendChild(typingRow);
+      scrollToBottom();
+      await new Promise(r => requestAnimationFrame(r));
+      typingRow.classList.add('visible');
+
+      const stopTyping = startTypingSound(sounds.typing, msg.typingDuration);
+      await new Promise(r => setTimeout(r, msg.typingDuration));
+      stopTyping();
+      typingRow.remove();
+    }
+
+    // Create bubble — fire sound exactly when bubble becomes visible
+    const emojiOnly = isEmojiOnly(msg.text);
+    const bubbleClass = `bubble ${msg.sender}${emojiOnly ? ' emoji-only' : ''}`;
+    const name  = msg.sender === 'received' ? receivedName : sentName;
+    const row = document.createElement('div');
+    row.className = `bubble-row ${msg.sender}`;
+    const bubbleContent = `
+      <div class="bubble-content">
+        <span class="bubble-name">${renderText(name)}</span>
+        <div class="${bubbleClass}">${renderText(msg.text)}</div>
+      </div>`;
+    row.innerHTML = msg.sender === 'received'
+      ? `${avatarHTML}${bubbleContent}`
+      : bubbleContent;
+    inner.appendChild(row);
+    scrollToBottom();
+
+    // One rAF: DOM is painted, bubble is in position but still transparent
+    await new Promise(r => requestAnimationFrame(r));
+
+    // Add .visible + emit sound atomically on the same frame
+    row.classList.add('visible');
+    if (msg.sender === 'sent') {
+      recordAudio('send');
+      playSound(sounds.send);
+    } else {
+      recordAudio('receive');
+      playSound(sounds.receive);
+    }
+
+    // Mid-conversation notifications
+    const midNotifs = notifications.filter(n => n.at === i);
+    for (const notif of midNotifs) {
+      await new Promise(r => setTimeout(r, 600));
+      showNotification(notif.title, notif.body);
+    }
+
+    scrollToBottom();
+  }
+
+  // Signal to Playwright that rendering is done
+  window.__RENDER_DONE__ = true;
+})();
+</script>
+</body>
+</html>
