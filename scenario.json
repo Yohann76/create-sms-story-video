@@ -9,58 +9,49 @@
     }
   },
   "contacts": {
-    "emma": {
-      "name": "Emma",
-      "avatarEmoji": "👱‍♀️",
-      "avatarImage": "assets/avatar-emma.jpg"
-    },
-    "lucas": {
-      "name": "Lucas",
+    "rayan": {
+      "name": "Rayan",
       "avatarEmoji": "🧑",
-      "avatarImage": "assets/avatar-lucas.jpg"
+      "avatarImage": "assets/avatar-rayan.jpg"
+    },
+    "camille": {
+      "name": "Camille",
+      "avatarEmoji": "👩",
+      "avatarImage": "assets/avatar-camille.jpg"
     }
   },
   "script": [
 
-    { "action": "open",         "contact": "emma", "delay": 800 },
-    { "action": "notification", "contact": "emma", "title": "Emma", "body": "c'était bien ce matin 😊", "delay": 600 },
+    { "action": "open",         "contact": "rayan", "delay": 200 },
+    { "action": "notification", "contact": "rayan", "title": "Rayan", "body": "j'ai le num de la fille d'espagnol 👀", "delay": 100 },
 
-    { "action": "message", "sender": "received", "text": "c'était bien ce matin 😊",                              "delay": 2000, "typingDuration": 1500 },
-    { "action": "message", "sender": "sent",     "text": "ouais vraiment bien",                                   "delay": 1800 },
-    { "action": "message", "sender": "received", "text": "j'avais pas envie de rentrer lol",                     "delay": 2500, "typingDuration": 1800 },
-    { "action": "message", "sender": "sent",     "text": "moi pareil, j'aurais bien traîné encore",              "delay": 2200 },
-    { "action": "message", "sender": "received", "text": "t'aurais dû rester, j'étais dans la cour jusqu'à 17h", "delay": 2500, "typingDuration": 2200 },
-    { "action": "message", "sender": "sent",     "text": "sérieux ? je savais pas",                              "delay": 2000 },
-    { "action": "message", "sender": "received", "text": "ouais avec Julie. au fait t'es rentré comment ?",      "delay": 2500, "typingDuration": 2000 },
-    { "action": "message", "sender": "sent",     "text": "à pied, c'est à 10 min",                              "delay": 2000 },
+    { "action": "message", "sender": "received", "text": "j'ai le num de la fille d'espagnol 👀",            "delay": 2000, "typingDuration": 1800 },
+    { "action": "message", "sender": "sent",     "text": "t'es sérieux ???",                                  "delay": 1800 },
+    { "action": "message", "sender": "received", "text": "ouais elle s'appelle Camille. tu veux que je te file ?", "delay": 2500, "typingDuration": 2000 },
+    { "action": "message", "sender": "sent",     "text": "envoie",                                            "delay": 1800 },
+    { "action": "message", "sender": "received", "text": "tiens 🫡 vas-y, t'hésites depuis 3 semaines",      "delay": 2000, "typingDuration": 2000 },
+    { "action": "message", "sender": "sent",     "text": "ferme la",                                          "delay": 1800 },
 
-    { "action": "message", "sender": "received", "text": "ah ouais. et c'est quoi l'histoire avec Manon ?",     "delay": 3000, "typingDuration": 2000 },
-    { "action": "message", "sender": "sent",     "text": "Manon ? quelle histoire",                              "delay": 2200 },
-    { "action": "message", "sender": "received", "text": "je vous ai vus parler longuement à la sortie",        "delay": 2500, "typingDuration": 1800 },
-    { "action": "message", "sender": "sent",     "text": "c'est juste une amie de l'an dernier",                "delay": 2500 },
-    { "action": "message", "sender": "received", "text": "ok. elle avait pas l'air de le voir comme ça",        "delay": 3000, "typingDuration": 2000 },
+    { "action": "switch", "to": "camille", "delay": 2800 },
 
-    { "action": "switch", "to": "lucas", "delay": 2800 },
-
-    { "action": "message", "sender": "sent",     "text": "LUCAS t'es au courant pour Manon ?",                  "delay": 1600 },
-    { "action": "message", "sender": "received", "text": "quelle histoire ?",                                    "delay": 2000, "typingDuration": 1200 },
-    { "action": "message", "sender": "sent",     "text": "Emma l'a vue, elle fait une tête",                    "delay": 2200 },
-    { "action": "message", "sender": "received", "text": "bro... Manon t'aime depuis la seconde. tout le monde le sait", "delay": 2500, "typingDuration": 2500 },
-    { "action": "message", "sender": "sent",     "text": "quoi ???",                                             "delay": 2000 },
-    { "action": "message", "sender": "received", "text": "sérieux t'étais le seul à pas le voir lol",           "delay": 2500, "typingDuration": 2000 },
-    { "action": "message", "sender": "sent",     "text": "et Emma le sait ?",                                    "delay": 1800 },
-    { "action": "message", "sender": "received", "text": "sûrement, les filles se parlent",                     "delay": 2000, "typingDuration": 1500 },
-
-    { "action": "switch", "to": "emma", "delay": 2800 },
-
-    { "action": "message", "sender": "sent",     "text": "Emma, Manon c'est vraiment rien je te jure",          "delay": 1800 },
-    { "action": "message", "sender": "received", "text": "t'es pas obligé de m'expliquer, on se connaît depuis hier", "delay": 3000, "typingDuration": 2200 },
-    { "action": "message", "sender": "sent",     "text": "c'est pour ça que je veux que ce soit clair",         "delay": 2500 },
-    { "action": "message", "sender": "received", "text": "j'aurais préféré pas le savoir en fait",              "delay": 2800, "typingDuration": 2000 },
-    { "action": "message", "sender": "sent",     "text": "mais c'est toi qui m'as écrit en premier 😊",         "delay": 2500 },
-    { "action": "message", "sender": "received", "text": "ouais... t'as raison",                                 "delay": 2500, "typingDuration": 1500 },
-    { "action": "message", "sender": "sent",     "text": "on fait quelque chose ce weekend ?",                  "delay": 2200 },
-    { "action": "message", "sender": "received", "text": "ouais pourquoi pas 🙂",                                "delay": 2500, "typingDuration": 1800 }
+    { "action": "message", "sender": "sent",     "text": "Salut, t'étais bien en espagnol ce matin ?",       "delay": 2500 },
+    { "action": "message", "sender": "received", "text": "ouais c'est moi 😊 c'est qui ?",                   "delay": 3500, "typingDuration": 1800 },
+    { "action": "message", "sender": "sent",     "text": "le mec assis 2 rangs derrière toi",                "delay": 2000 },
+    { "action": "message", "sender": "received", "text": "ah... j'avais remarqué lol",                       "delay": 2800, "typingDuration": 1500 },
+    { "action": "message", "sender": "sent",     "text": "dans le bon sens j'espère",                        "delay": 2000 },
+    { "action": "message", "sender": "received", "text": "ça dépend pourquoi tu m'écris",                    "delay": 2800, "typingDuration": 1800 },
+    { "action": "message", "sender": "sent",     "text": "j'avais envie de te parler en dehors du cours",   "delay": 2200 },
+    { "action": "message", "sender": "received", "text": "t'as mis 3 semaines à envoyer ce message",         "delay": 3000, "typingDuration": 2000 },
+    { "action": "message", "sender": "sent",     "text": "comment tu sais ça ???",                           "delay": 2000 },
+    { "action": "message", "sender": "received", "text": "Inès m'a dit que tu demandais mon num depuis un moment", "delay": 2500, "typingDuration": 2200 },
+    { "action": "message", "sender": "sent",     "text": "je vais tuer Inès",                                "delay": 2000 },
+    { "action": "message", "sender": "received", "text": "ptdr. c'est mignon en fait",                       "delay": 2500, "typingDuration": 1500 },
+    { "action": "message", "sender": "sent",     "text": "super, je suis mignon maintenant",                 "delay": 2000 },
+    { "action": "message", "sender": "received", "text": "c'est pas une insulte 😄",                         "delay": 2500, "typingDuration": 1500 },
+    { "action": "message", "sender": "sent",     "text": "tu veux qu'on se retrouve avant le cours ?",       "delay": 2200 },
+    { "action": "message", "sender": "received", "text": "demain à la bibli ça te va ?",                     "delay": 2500, "typingDuration": 1800 },
+    { "action": "message", "sender": "sent",     "text": "carrément",                                         "delay": 2000 },
+    { "action": "message", "sender": "received", "text": "à demain alors 🙂",                                 "delay": 2000, "typingDuration": 1500 }
 
   ]
 }

@@ -202,6 +202,8 @@ Quelqu'un reçoit un message d'un numéro inconnu — son nouveau coloc ou voisi
 - Chaque contact a un prénom réaliste, court
 - Les avatars doivent être cohérents avec le personnage (genre, style)
 - La **première action du script** est toujours une `notification` — c'est le hook visuel
+- L'action `open` doit avoir un `delay` de **200ms maximum** — la conversation doit apparaître immédiatement
+- La première `notification` doit avoir un `delay` de **100ms maximum** — le hook doit frapper dans la première seconde, pas après 1-2 secondes de vide
 - Un `switch` est toujours suivi d'un message **envoyé par Moi** en premier, sauf si une notification justifie l'ouverture
 - Le `delay` d'un `switch` doit être **minimum 2500ms** pour laisser le temps de lire le dernier message avant que la conversation change
 
