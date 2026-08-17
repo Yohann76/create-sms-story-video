@@ -292,6 +292,37 @@
   }
   .home-bar { width: 200px; height: 10px; background: #000; border-radius: 5px; opacity: 0.2; }
 
+  /* ── Standby (lock screen) ── */
+  #standbyScreen {
+    position: absolute; inset: 0; z-index: 30;
+    background: linear-gradient(160deg, #0f0c29 0%, #302b63 55%, #24243e 100%);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 20px;
+    transition: opacity 0.45s ease, transform 0.45s ease;
+  }
+  #standbyScreen.slide-out { opacity: 0; transform: translateY(-80px); pointer-events: none; }
+  .standby-time {
+    color: #fff; font-size: 152px; font-weight: 200;
+    letter-spacing: -6px; line-height: 1;
+  }
+  .standby-date {
+    color: rgba(255,255,255,0.6); font-size: 42px;
+    font-weight: 300; letter-spacing: 0.5px;
+  }
+
+  /* ── Tap ripple ── */
+  .tap-ripple {
+    position: fixed; width: 90px; height: 90px; border-radius: 50%;
+    background: rgba(255,255,255,0.45);
+    transform: translate(-50%, -50%) scale(0);
+    animation: rippleAnim 0.42s ease-out forwards;
+    pointer-events: none; z-index: 400;
+  }
+  @keyframes rippleAnim {
+    0%   { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(4.5); opacity: 0; }
+  }
+
   /* ── Layout TikTok safe zones ── */
   #tikTokRow {
     flex: 1;
@@ -326,6 +357,12 @@
 
 <div id="tikTokRow">
 <div id="smsColumn">
+
+<!-- Standby screen (lock screen) -->
+<div id="standbyScreen">
+  <div class="standby-time" id="standbyTime"></div>
+  <div class="standby-date" id="standbyDate"></div>
+</div>
 
 <!-- Notification banner (hors convScreen pour ne pas être affectée par les transitions) -->
 <div class="notification-banner" id="notifBanner">
@@ -442,6 +479,20 @@
   // ── State ────────────────────────────────────────────────────────────────
   let currentContactId = null;
   const convHistories  = {};   // contactId → innerHTML sauvegardé
+  let inStandby        = true;
+  let skipNextTyping   = false;
+
+  // ── Standby clock ────────────────────────────────────────────────────────
+  ;(function initStandbyClock() {
+    const now = new Date();
+    const hh  = now.getHours().toString().padStart(2, '0');
+    const mm  = now.getMinutes().toString().padStart(2, '0');
+    document.getElementById('standbyTime').textContent = hh + ':' + mm;
+    const days   = ['Dim.','Lun.','Mar.','Mer.','Jeu.','Ven.','Sam.'];
+    const months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+    document.getElementById('standbyDate').textContent =
+      days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];
+  })();
 
   // ── Audio ────────────────────────────────────────────────────────────────
   function recordAudio(key, extra = {}) {
@@ -557,8 +608,57 @@
     const contact = contacts[contactId];
     if (!contact) return;
     updateNavBar(contact);
+    if (inStandby) return; // contenu chargé après la transition depuis le standby
     inner.innerHTML = convHistories[contactId] || '';
     scrollToBottom();
+  }
+
+  // ── Notification sur écran standby (bloquante) ───────────────────────────
+  async function showNotificationOnStandby(title, body, contactId) {
+    const contact = contacts[contactId];
+    const iconEl  = document.getElementById('notifIcon');
+    iconEl.innerHTML = '';
+    if (contact?.avatarImage) {
+      const img = document.createElement('img'); img.src = contact.avatarImage; img.alt = '';
+      iconEl.appendChild(img);
+    } else { iconEl.textContent = contact?.avatarEmoji || '💬'; }
+    document.getElementById('notifTitle').innerHTML = renderText(title);
+    document.getElementById('notifBody').innerHTML  = renderText(body);
+
+    const banner = document.getElementById('notifBanner');
+    banner.classList.add('show');
+    recordAudio('notification');
+    playSound(sounds.notification);
+
+    // L'utilisateur "lit" la notification
+    await new Promise(r => setTimeout(r, 900));
+
+    // Animation de tap sur la notification
+    const rect   = banner.getBoundingClientRect();
+    const ripple = document.createElement('div');
+    ripple.className  = 'tap-ripple';
+    ripple.style.left = (rect.right - 140) + 'px';
+    ripple.style.top  = (rect.top + rect.height / 2) + 'px';
+    document.body.appendChild(ripple);
+    await new Promise(r => setTimeout(r, 240));
+    ripple.remove();
+
+    // Effacer la notification
+    if (notifTimeout) clearTimeout(notifTimeout);
+    banner.classList.remove('show');
+
+    // Charger le contenu de la conversation sous le standby
+    inner.innerHTML = convHistories[currentContactId] || '';
+    scrollToBottom();
+
+    // Slide-out du standby — on libère le script après 220ms (pendant la transition)
+    const standby = document.getElementById('standbyScreen');
+    standby.classList.add('slide-out');
+    await new Promise(r => setTimeout(r, 220));
+    inStandby      = false;
+    skipNextTyping = true; // premier message reçu → pas d'indicateur de frappe
+    // Nettoyage après la fin de la transition CSS
+    setTimeout(() => { standby.style.display = 'none'; }, 280);
   }
 
   // ── Switch conversation (avec animation) ─────────────────────────────────
@@ -600,20 +700,24 @@
 
     // Indicateur de frappe pour les messages reçus
     if (action.sender === 'received' && action.typingDuration) {
-      const typingRow = document.createElement('div');
-      typingRow.className = 'typing-indicator';
-      typingRow.innerHTML = `${avatarHTML(contact)}
-        <div class="typing-bubble">
-          <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
-        </div>`;
-      inner.appendChild(typingRow);
-      scrollToBottom();
-      await new Promise(r => requestAnimationFrame(r));
-      typingRow.classList.add('visible');
-      const stopTyping = startTypingSound(sounds.typing, action.typingDuration);
-      await new Promise(r => setTimeout(r, action.typingDuration));
-      stopTyping();
-      typingRow.remove();
+      if (skipNextTyping) {
+        skipNextTyping = false; // premier message après le standby : pas de typing
+      } else {
+        const typingRow = document.createElement('div');
+        typingRow.className = 'typing-indicator';
+        typingRow.innerHTML = `${avatarHTML(contact)}
+          <div class="typing-bubble">
+            <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+          </div>`;
+        inner.appendChild(typingRow);
+        scrollToBottom();
+        await new Promise(r => requestAnimationFrame(r));
+        typingRow.classList.add('visible');
+        const stopTyping = startTypingSound(sounds.typing, action.typingDuration);
+        await new Promise(r => setTimeout(r, action.typingDuration));
+        stopTyping();
+        typingRow.remove();
+      }
     }
 
     // Création de la bulle
@@ -653,8 +757,12 @@
       await showMessage(action);
 
     } else if (action.action === 'notification') {
-      // Non-bloquant : la notification s'affiche et le script continue
-      showNotification(action.title, action.body, action.contact);
+      if (inStandby) {
+        await showNotificationOnStandby(action.title, action.body, action.contact);
+      } else {
+        // Non-bloquant hors standby
+        showNotification(action.title, action.body, action.contact);
+      }
 
     } else if (action.action === 'switch') {
       await switchConversation(action.to);

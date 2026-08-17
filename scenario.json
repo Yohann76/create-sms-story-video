@@ -25,7 +25,7 @@
     { "action": "open",         "contact": "emma", "delay": 200 },
     { "action": "notification", "contact": "emma", "title": "Emma", "body": "ok nouveau jeu — tu fais semblant de pas me connaître", "delay": 100 },
 
-    { "action": "message", "sender": "received", "text": "ok nouveau jeu — tu fais semblant de pas me connaître",         "delay": 2000, "typingDuration": 1800 },
+    { "action": "message", "sender": "received", "text": "ok nouveau jeu — tu fais semblant de pas me connaître",         "delay": 300,  "typingDuration": 1800 },
     { "action": "message", "sender": "sent",     "text": "??",                                                             "delay": 1800 },
     { "action": "message", "sender": "received", "text": "joue le jeu. t'es un inconnu qui m'écrit pour la première fois", "delay": 2800, "typingDuration": 2200 },
     { "action": "message", "sender": "sent",     "text": "ok... salut. je t'ai vue en cours de maths",                    "delay": 2500 },
