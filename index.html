@@ -221,8 +221,9 @@
     font-size: 34px;
     overflow: hidden; gap: 0;
   }
+  #inputInner       { flex: 1; display: flex; align-items: center; min-width: 0; }
   #inputPlaceholder { color: #aeaeb2; flex-shrink: 0; }
-  #inputTyped       { color: #000; white-space: nowrap; overflow: hidden; }
+  #inputTyped       { color: #000; white-space: nowrap; }
   .input-cursor {
     display: inline-block; width: 3px; height: 44px;
     background: #007aff; border-radius: 2px;
@@ -368,8 +369,10 @@
   <div class="input-bar">
     <div class="input-icon">📷</div>
     <div class="input-field">
-      <span id="inputPlaceholder">iMessage</span>
-      <span id="inputTyped"></span><span id="inputCursor" class="input-cursor"></span>
+      <div id="inputInner">
+        <span id="inputPlaceholder">iMessage</span>
+        <span id="inputTyped"></span><span id="inputCursor" class="input-cursor"></span>
+      </div>
     </div>
     <div class="input-icon">🎤</div>
   </div>
@@ -521,25 +524,31 @@
     document.getElementById('inputPlaceholder').style.display = '';
     document.getElementById('inputTyped').textContent = '';
     document.getElementById('inputCursor').classList.remove('blink');
+    document.getElementById('inputInner').style.transform = 'translateX(0)';
   }
 
   async function typeInInput(text) {
     const placeholder = document.getElementById('inputPlaceholder');
     const typed       = document.getElementById('inputTyped');
     const cursor      = document.getElementById('inputCursor');
+    const inputInner  = document.getElementById('inputInner');
     placeholder.style.display = 'none';
     cursor.classList.add('blink');
     typed.textContent = '';
+    inputInner.style.transform = 'translateX(0)';
     recordAudio('typing');
     for (const char of [...text]) {
       typed.textContent += char;
       playSound(sounds.typing, 0.22);
+      const shift = Math.max(0, inputInner.scrollWidth - inputInner.clientWidth);
+      if (shift > 0) inputInner.style.transform = `translateX(-${shift}px)`;
       await new Promise(r => setTimeout(r, 42 + Math.random() * 38));
     }
     await new Promise(r => setTimeout(r, 200 + Math.random() * 180));
     typed.textContent = '';
     cursor.classList.remove('blink');
     placeholder.style.display = '';
+    inputInner.style.transform = 'translateX(0)';
   }
 
   // ── Open conversation ────────────────────────────────────────────────────
