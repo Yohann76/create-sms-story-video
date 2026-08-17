@@ -310,6 +310,33 @@
     font-weight: 300; letter-spacing: 0.5px;
   }
 
+  /* ── Hook overlay TikTok ── */
+  #hookOverlay {
+    position: absolute;
+    top: 50%;
+    left: 0; right: 0;
+    transform: translateY(60px);
+    z-index: 500;
+    padding: 0 60px;
+    font-size: 52px;
+    font-weight: 900;
+    line-height: 1.35;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow:
+      -3px -3px 0 rgba(0,0,0,0.85),
+       3px -3px 0 rgba(0,0,0,0.85),
+      -3px  3px 0 rgba(0,0,0,0.85),
+       3px  3px 0 rgba(0,0,0,0.85),
+       0    6px 24px rgba(0,0,0,0.95);
+    opacity: 0;
+    transition: opacity 0.38s ease, transform 0.38s ease;
+    pointer-events: none;
+  }
+  #hookOverlay.visible { opacity: 1; transform: translateY(0); }
+  #hookOverlay.fade-out { opacity: 0; transform: translateY(-16px); }
+
   /* ── Tap ripple ── */
   .tap-ripple {
     position: fixed; width: 90px; height: 90px; border-radius: 50%;
@@ -363,6 +390,9 @@
   <div class="standby-time" id="standbyTime"></div>
   <div class="standby-date" id="standbyDate"></div>
 </div>
+
+<!-- Hook overlay TikTok -->
+<div id="hookOverlay"></div>
 
 <!-- Notification banner (hors convScreen pour ne pas être affectée par les transitions) -->
 <div class="notification-banner" id="notifBanner">
@@ -481,6 +511,26 @@
   const convHistories  = {};   // contactId → innerHTML sauvegardé
   let inStandby        = true;
   let skipNextTyping   = false;
+
+  // ── Hook overlay ─────────────────────────────────────────────────────────
+  // Préparation uniquement — le déclenchement se fait depuis showNotificationOnStandby
+  ;(function initHookOverlay() {
+    const text = config.hookOverlay;
+    if (!text) return;
+    const el = document.getElementById('hookOverlay');
+    el.textContent = text;
+    el.style.color = config.hookOverlayColor || '#FFE600';
+  })();
+
+  function triggerHookOverlay() {
+    const el = document.getElementById('hookOverlay');
+    if (!el || !el.textContent) return;
+    el.classList.add('visible');
+    setTimeout(() => {
+      el.classList.add('fade-out');
+      setTimeout(() => { el.style.display = 'none'; }, 400);
+    }, 7000);
+  }
 
   // ── Standby clock ────────────────────────────────────────────────────────
   ;(function initStandbyClock() {
@@ -657,8 +707,8 @@
     await new Promise(r => setTimeout(r, 220));
     inStandby      = false;
     skipNextTyping = true; // premier message reçu → pas d'indicateur de frappe
-    // Nettoyage après la fin de la transition CSS
     setTimeout(() => { standby.style.display = 'none'; }, 280);
+    triggerHookOverlay(); // démarre maintenant que la conversation est visible
   }
 
   // ── Switch conversation (avec animation) ─────────────────────────────────

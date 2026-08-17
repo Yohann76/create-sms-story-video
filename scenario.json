@@ -1,6 +1,8 @@
 {
   "config": {
     "myName": "Moi",
+    "hookOverlay": "poc ta meilleure amie te propose ça à 23h 🫠",
+    "hookOverlayColor": "#FFE600",
     "sounds": {
       "send":         "assets/song-10-08-2026/send-song.mp3",
       "receive":      "assets/song-10-08-2026/reception-song.mp3",
