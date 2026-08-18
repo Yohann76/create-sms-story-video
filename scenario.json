@@ -1,8 +1,8 @@
 {
   "config": {
     "myName": "Moi",
-    "hookOverlay": "poc ta meilleure amie te propose ça à 23h 🫠",
-    "hookOverlayColor": "#FFE600",
+    "hookOverlay": "POV tes deux meilleurs amis te cachent qu'ils sortent ensemble 💀",
+    "hookOverlayColor": "#B5FF6B",
     "sounds": {
       "send":         "assets/song-10-08-2026/send-song.mp3",
       "receive":      "assets/song-10-08-2026/reception-song.mp3",
@@ -11,59 +11,52 @@
     }
   },
   "contacts": {
-    "emma": {
-      "name": "Emma",
+    "jade": {
+      "name": "Jade",
       "avatarEmoji": "👩",
-      "avatarImage": "assets/avatar-emma.jpg"
+      "avatarImage": "assets/avatar-jade.jpg"
     },
-    "noah": {
-      "name": "Noah",
+    "rayan": {
+      "name": "Rayan",
       "avatarEmoji": "👦",
-      "avatarImage": "assets/avatar-noah.jpg"
+      "avatarImage": "assets/avatar-rayan.jpg"
     }
   },
   "script": [
 
-    { "action": "open",         "contact": "emma", "delay": 200 },
-    { "action": "notification", "contact": "emma", "title": "Emma", "body": "ok nouveau jeu — tu fais semblant de pas me connaître", "delay": 100 },
+    { "action": "open",         "contact": "jade", "delay": 200 },
+    { "action": "notification", "contact": "jade", "title": "Jade", "body": "faut que je te dise un truc", "delay": 100 },
 
-    { "action": "message", "sender": "received", "text": "ok nouveau jeu — tu fais semblant de pas me connaître",         "delay": 300,  "typingDuration": 1800 },
-    { "action": "message", "sender": "sent",     "text": "??",                                                             "delay": 1800 },
-    { "action": "message", "sender": "received", "text": "joue le jeu. t'es un inconnu qui m'écrit pour la première fois", "delay": 2800, "typingDuration": 2200 },
-    { "action": "message", "sender": "sent",     "text": "ok... salut. je t'ai vue en cours de maths",                    "delay": 2500 },
-    { "action": "message", "sender": "received", "text": "ah bon ? t'étais assis où",                                     "delay": 2500, "typingDuration": 1500 },
-    { "action": "message", "sender": "sent",     "text": "derrière toi. au fond",                                         "delay": 2000 },
-    { "action": "message", "sender": "received", "text": "et t'as eu mon num comment",                                    "delay": 2500, "typingDuration": 1500 },
-    { "action": "message", "sender": "sent",     "text": "un ami commun. je dirai pas qui",                               "delay": 2000 },
-    { "action": "message", "sender": "received", "text": "mystérieux... j'aime bien",                                     "delay": 3000, "typingDuration": 1500 },
-    { "action": "message", "sender": "sent",     "text": "t'as l'habitude qu'on te remarque ou pas ?",                   "delay": 2200 },
-    { "action": "message", "sender": "received", "text": "honnêtement... pas vraiment",                                   "delay": 3000, "typingDuration": 1200 },
-    { "action": "message", "sender": "sent",     "text": "c'est bizarre parce que t'as l'air impossible à ignorer",       "delay": 2500 },
-    { "action": "message", "sender": "received", "text": "attends c'est une ligne ou t'es sincère là",                   "delay": 3200, "typingDuration": 1800 },
-    { "action": "message", "sender": "sent",     "text": "je sais même pas",                                              "delay": 2000 },
+    { "action": "message", "sender": "received", "text": "faut que je te dise un truc",                                  "delay": 300,  "typingDuration": 1500 },
+    { "action": "message", "sender": "sent",     "text": "quoi t'as l'air bizarre",                                      "delay": 2800 },
+    { "action": "message", "sender": "received", "text": "je sors avec quelqu'un depuis 4 mois",                         "delay": 3200, "typingDuration": 2000 },
+    { "action": "message", "sender": "sent",     "text": "QUOI",                                                          "delay": 2000 },
+    { "action": "message", "sender": "received", "text": "je sais je sais",                                              "delay": 2800, "typingDuration": 1000 },
+    { "action": "message", "sender": "sent",     "text": "et tu m'as rien dit pendant 4 mois",                          "delay": 2500 },
+    { "action": "message", "sender": "received", "text": "j'avais peur de ta réaction",                                  "delay": 3000, "typingDuration": 1800 },
+    { "action": "message", "sender": "sent",     "text": "pourquoi ma réaction",                                         "delay": 2200 },
+    { "action": "message", "sender": "received", "text": "parce que c'est Rayan",                                        "delay": 3500, "typingDuration": 1500 },
+    { "action": "message", "sender": "sent",     "text": "...",                                                           "delay": 3500 },
 
-    { "action": "switch", "to": "noah", "delay": 3000 },
-    { "action": "message", "sender": "sent",     "text": "noah j'ai un problème",                                         "delay": 2000 },
-    { "action": "message", "sender": "received", "text": "quoi encore",                                                   "delay": 2500, "typingDuration": 800  },
-    { "action": "message", "sender": "sent",     "text": "Emma m'a proposé de jouer l'inconnu qui la drague et je suis en train de vraiment la draguer", "delay": 3000 },
-    { "action": "message", "sender": "received", "text": "mec. elle a proposé ce jeu pour une raison",                   "delay": 3000, "typingDuration": 2000 },
-    { "action": "message", "sender": "sent",     "text": "genre elle teste si j'ose ?",                                   "delay": 2200 },
-    { "action": "message", "sender": "received", "text": "elle teste si tu dis la vérité sans qu'elle ait à demander",   "delay": 3200, "typingDuration": 2200 },
-    { "action": "message", "sender": "sent",     "text": "t'étais au courant depuis quand toi",                           "delay": 2200 },
-    { "action": "message", "sender": "received", "text": "des mois. joue plus le jeu. dis-lui vraiment",                 "delay": 3000, "typingDuration": 2000 },
+    { "action": "switch", "to": "rayan", "delay": 3000 },
+    { "action": "message", "sender": "sent",     "text": "Rayan t'es avec Jade",                                         "delay": 2000 },
+    { "action": "message", "sender": "received", "text": "elle t'a dit",                                                  "delay": 2800, "typingDuration": 1000 },
+    { "action": "message", "sender": "sent",     "text": "ouais. pourquoi vous m'avez caché ça",                        "delay": 2500 },
+    { "action": "message", "sender": "received", "text": "on avait peur de ta réaction parce que c'est toi qui nous avais mis ensemble", "delay": 3500, "typingDuration": 2800 },
+    { "action": "message", "sender": "sent",     "text": "je vous ai mis ensemble ??",                                   "delay": 2200 },
+    { "action": "message", "sender": "received", "text": "la soirée de novembre. tu nous as forcés à danser ensemble",  "delay": 3500, "typingDuration": 2500 },
+    { "action": "message", "sender": "sent",     "text": "ptdr je m'en souviens même pas",                              "delay": 2500 },
+    { "action": "message", "sender": "received", "text": "c'est là que tout a commencé",                                 "delay": 3000, "typingDuration": 1500 },
 
-    { "action": "switch", "to": "emma", "delay": 3000 },
-    { "action": "message", "sender": "sent",     "text": "ok j'arrête le jeu",                                            "delay": 2000 },
-    { "action": "message", "sender": "received", "text": "pourquoi",                                                      "delay": 3000, "typingDuration": 800  },
-    { "action": "message", "sender": "sent",     "text": "parce que là c'est plus un jeu pour moi",                      "delay": 2500 },
-    { "action": "message", "sender": "received", "text": "...",                                                            "delay": 3500, "typingDuration": 2500 },
-    { "action": "message", "sender": "received", "text": "pour moi non plus",                                             "delay": 3000, "typingDuration": 1000 },
-    { "action": "message", "sender": "sent",     "text": "c'était quoi le vrai but du jeu",                               "delay": 2500 },
-    { "action": "message", "sender": "received", "text": "voir si t'avais les mêmes trucs que moi dans la tête",         "delay": 3200, "typingDuration": 2000 },
-    { "action": "message", "sender": "sent",     "text": "et t'as ta réponse ?",                                          "delay": 2200 },
-    { "action": "message", "sender": "received", "text": "ouais. largement",                                              "delay": 3000, "typingDuration": 800  },
-    { "action": "message", "sender": "sent",     "text": "alors on fait quoi maintenant",                                 "delay": 2200 },
-    { "action": "message", "sender": "received", "text": "on recommence. mais cette fois sans faire semblant 🙂",         "delay": 3500, "typingDuration": 2500 }
+    { "action": "switch", "to": "jade", "delay": 3000 },
+    { "action": "message", "sender": "sent",     "text": "donc c'est de ma faute en gros",                              "delay": 2200 },
+    { "action": "message", "sender": "received", "text": "t'es fâché ?",                                                 "delay": 3000, "typingDuration": 1000 },
+    { "action": "message", "sender": "sent",     "text": "non je suis genre... touché",                                 "delay": 2500 },
+    { "action": "message", "sender": "received", "text": "touché ?",                                                     "delay": 3000, "typingDuration": 800  },
+    { "action": "message", "sender": "sent",     "text": "que vous ayez eu peur de me le dire. j'aurais été trop content pour vous", "delay": 3000 },
+    { "action": "message", "sender": "received", "text": "t'es vraiment nul parfois",                                   "delay": 3000, "typingDuration": 1500 },
+    { "action": "message", "sender": "sent",     "text": "c'est moi qui vous ai mis ensemble chérie",                   "delay": 2500 },
+    { "action": "message", "sender": "received", "text": "ptdr ok on te doit un restau 😭",                             "delay": 3000, "typingDuration": 1800 }
 
   ]
 }
